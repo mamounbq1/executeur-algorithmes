@@ -1,7 +1,7 @@
 {
   "name": "executeur-algorithmes",
   "productName": "Exécuteur d'algorithmes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Écrire, exécuter pas à pas et visualiser des algorithmes en français.",
   "author": "Exécuteur d'algorithmes",
   "license": "UNLICENSED",
@@ -10,7 +10,8 @@
   "scripts": {
     "prepare-app": "node prepare.js",
     "start": "node prepare.js && electron .",
-    "dist": "node prepare.js && electron-builder --win nsis"
+    "dist": "node prepare.js && electron-builder --win nsis --x64 && electron-builder --win nsis --ia32",
+    "dist:mac": "node prepare.js && electron-builder --mac dmg --x64 --arm64"
   },
   "devDependencies": {
     "electron": "33.2.1",
@@ -37,8 +38,20 @@
       "uninstallDisplayName": "Exécuteur d'algorithmes",
       "installerLanguages": ["fr_FR"],
       "language": "1036",
-      "artifactName": "Executeur-algorithmes-Setup-${version}.${ext}"
+      "artifactName": "Executeur-algorithmes-Windows-${arch}.${ext}"
     },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.png",
+      "category": "public.app-category.education",
+      "identity": null,
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "artifactName": "Executeur-algorithmes-Mac-${arch}.${ext}",
+      "title": "Exécuteur d'algorithmes"
+    },
+    "afterPack": "build/adhoc-sign.js",
     "fileAssociations": [
       {
         "ext": "algo",

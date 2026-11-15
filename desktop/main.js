@@ -4,14 +4,21 @@ const path = require("path");
 const fs = require("fs");
 
 const APP_NAME = "Exécuteur d'algorithmes";
-const SITE = "https://mamounbq1.github.io/executeur-algorithmes/";
+const SITE = "https://executeur-algorithmes.vercel.app/";
+const IS_MAC = process.platform === "darwin";
 let win = null;
 
-// Un fichier .algo passé en argument (double-clic dans l'Explorateur)
+// Un fichier .algo passé en argument (double-clic dans l'Explorateur Windows)
 function fileArg(argv) {
   return argv.slice(1).find(a => /\.(algo|txt)$/i.test(a) && fs.existsSync(a)) || null;
 }
 let pending = fileArg(process.argv);
+
+// macOS : double-clic sur un .algo dans le Finder
+app.on("open-file", (e, p) => {
+  e.preventDefault();
+  if (win && !win.webContents.isLoading()) sendFile(p); else pending = p;
+});
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -96,6 +103,7 @@ function buildMenu() {
         detail: "Version " + app.getVersion() + "\nÉcrire, exécuter pas à pas et visualiser des algorithmes en français." }) }
     ]}
   ];
+  if (IS_MAC) tpl.unshift({ role: "appMenu", label: APP_NAME });
   Menu.setApplicationMenu(Menu.buildFromTemplate(tpl));
 }
 
