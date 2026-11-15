@@ -49,7 +49,7 @@
     },
     "dmg": {
       "artifactName": "Executeur-algorithmes-Mac-${arch}.${ext}",
-      "title": "Exécuteur d'algorithmes"
+      "title": "Executeur algorithmes"
     },
     "afterPack": "build/adhoc-sign.js",
     "fileAssociations": [
