@@ -42,7 +42,7 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "build/icon.png",
+      "icon": "build/icon.icns",
       "category": "public.app-category.education",
       "identity": null,
       "hardenedRuntime": false
