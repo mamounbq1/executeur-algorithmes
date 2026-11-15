@@ -95,6 +95,22 @@ details p{color:var(--muted);margin:10px 0 0}
 .final p{color:#9fbab7;margin:0 auto 26px;max-width:52ch}
 .final .cta{justify-content:center}
 .final .btn.ghost{background:transparent;color:#fff;border-color:#ffffff40}
+.dls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.dlc{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:6px}
+.dlc .os{width:26px;height:26px;color:var(--ink)}
+.dlc h3{margin:6px 0 0;font-size:18px}
+.dlc p{margin:0;color:var(--muted);font-size:14.5px;flex:1}
+.dlc .btn{margin-top:12px;justify-content:center;font-size:15.5px;padding:11px 16px}
+.dlc.reco{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.dls.has-reco .dlc:not(.reco) .btn{background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:none}
+.dlc .badge{position:absolute;top:-11px;right:16px;background:var(--accent);color:var(--accent-ink);font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px}
+.dlc .size{font-size:13px;color:var(--muted)}
+.how{margin-top:16px;font-size:15px;color:var(--muted)}
+.how b{color:var(--ink)}
+.cols2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px}
+.cols2 h3{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:20px}
+.cols2 h3 .os{width:24px;height:24px}
+.steps.v{grid-template-columns:minmax(0,1fr)}
 footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);font-size:14px}
 
 @media (max-width:860px){
@@ -113,6 +129,7 @@ footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);f
     <a class="brand" href="#"><img src="img/icon.png" alt="">Exécuteur d'algorithmes</a>
     <nav aria-label="Sections">
       <a href="#fonctions">Fonctionnalités</a>
+      <a href="#telecharger">Télécharger</a>
       <a href="#installer">Installation</a>
       <a href="#questions">Questions</a>
       <a href="app/">Essayer en ligne</a>
@@ -126,16 +143,16 @@ footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);f
         <h1>Écrivez vos algorithmes. <em>Regardez-les s'exécuter.</em></h1>
         <p class="lead">Suivez chaque instruction pas à pas, voyez les variables changer et l'organigramme s'animer. Les erreurs sont expliquées simplement.</p>
         <div class="cta">
-          <a class="btn primary" id="dl" href="https://github.com/mamounbq1/executeur-algorithmes/releases/latest/download/Executeur-algorithmes-Setup-1.0.0.exe">
+          <a class="btn primary" id="dl" href="#telecharger">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 10l6 6 6-6M4 21h16"/></svg>
-            Télécharger pour Windows
+            <span id="dl-label">Télécharger</span>
           </a>
           <a class="btn ghost" href="app/">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l12 8-12 8z"/></svg>
             Essayer en ligne
           </a>
         </div>
-        <p class="meta">Version 1.0.0 · Windows 10 et 11 · <span id="dl-size">78 Mo</span></p>
+        <p class="meta">Version 1.0.1 · Windows 10 et 11 (64 et 32 bits) · macOS 11 et plus (Apple Silicon et Intel) · <a href="#telecharger">toutes les versions</a></p>
       </div>
       <div class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i></div><img src="img/capture-execution.png" alt="L'application : algorithme à gauche, écran et variables à droite, ligne en cours surlignée" width="1400" height="860"></div>
     </div>
@@ -204,37 +221,86 @@ footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);f
       </div>
     </section>
 
+    <section id="telecharger">
+      <h2>Télécharger</h2>
+      <p class="sub">Choisissez la version de votre ordinateur. Celle qui convient est mise en avant automatiquement quand c'est possible.</p>
+      <div class="dls">
+        <div class="dlc" data-dl="win-x64"><svg class="os" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5l7.5-1v7H3zM11.5 4.3L21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg><h3>Windows · 64 bits</h3><p>Pour presque tous les PC récents (Windows 10 et 11).</p><span class="size">Installateur .exe · environ 80 Mo</span><a class="btn primary" href="https://github.com/mamounbq1/executeur-algorithmes/releases/latest/download/Executeur-algorithmes-Windows-x64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 10l6 6 6-6M4 21h16"/></svg>Télécharger</a></div>
+        <div class="dlc" data-dl="win-ia32"><svg class="os" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5l7.5-1v7H3zM11.5 4.3L21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg><h3>Windows · 32 bits</h3><p>Pour les anciens PC dont Windows est en 32 bits.</p><span class="size">Installateur .exe · environ 75 Mo</span><a class="btn primary" href="https://github.com/mamounbq1/executeur-algorithmes/releases/latest/download/Executeur-algorithmes-Windows-ia32.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 10l6 6 6-6M4 21h16"/></svg>Télécharger</a></div>
+        <div class="dlc" data-dl="mac-arm64"><svg class="os" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.5-1-2.5-3.9zM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg><h3>Mac · Apple Silicon</h3><p>Pour les Mac avec puce Apple M1, M2, M3, M4 (depuis fin 2020).</p><span class="size">Image disque .dmg · environ 100 Mo</span><a class="btn primary" href="https://github.com/mamounbq1/executeur-algorithmes/releases/latest/download/Executeur-algorithmes-Mac-arm64.dmg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 10l6 6 6-6M4 21h16"/></svg>Télécharger</a></div>
+        <div class="dlc" data-dl="mac-x64"><svg class="os" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.5-1-2.5-3.9zM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg><h3>Mac · Intel</h3><p>Pour les Mac avec processeur Intel (avant 2021).</p><span class="size">Image disque .dmg · environ 105 Mo</span><a class="btn primary" href="https://github.com/mamounbq1/executeur-algorithmes/releases/latest/download/Executeur-algorithmes-Mac-x64.dmg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 10l6 6 6-6M4 21h16"/></svg>Télécharger</a></div>
+      </div>
+      <p class="how"><b>Windows 64 ou 32 bits ?</b> Paramètres → Système → Informations système → « Type du système ». En cas de doute, prenez 64 bits.<br>
+      <b>Mac Apple Silicon ou Intel ?</b> Menu Pomme (en haut à gauche) → À propos de ce Mac : « Puce Apple M… » = Apple Silicon, « Processeur Intel » = Intel.<br>
+      <b>Linux, Chromebook ou tablette ?</b> Utilisez la <a href="app/">version en ligne</a>, qui fonctionne dans le navigateur.</p>
+    </section>
+
     <section id="installer">
       <h2>Installation en une minute</h2>
       <p class="sub">Pas de compte et pas de connexion nécessaire une fois installée.</p>
-      <ol class="steps">
-        <li><b>Télécharger</b><span>Cliquez sur « Télécharger pour Windows ». Le fichier <code>Executeur-algorithmes-Setup-1.0.0.exe</code> arrive dans vos Téléchargements.</span></li>
-        <li><b>Lancer l'installation</b><span>Double-cliquez sur le fichier, choisissez le dossier puis cliquez sur « Installer ».</span></li>
-        <li><b>C'est prêt</b><span>Ouvrez l'application depuis le Bureau ou le menu Démarrer. Les fichiers .algo s'ouvrent d'un double-clic.</span></li>
-      </ol>
-      <p class="note"><b>Windows affiche « Windows a protégé votre ordinateur » ?</b> C'est normal pour une nouvelle application qui n'est pas encore signée. Cliquez sur <b>Informations complémentaires</b>, puis sur <b>Exécuter quand même</b>.</p>
+      <div class="cols2">
+        <div>
+          <h3><svg class="os" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5l7.5-1v7H3zM11.5 4.3L21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg> Windows</h3>
+          <ol class="steps v">
+            <li><b>Lancer l'installateur</b><span>Double-cliquez sur le fichier <code>.exe</code> téléchargé, choisissez le dossier puis cliquez sur « Installer ».</span></li>
+            <li><b>C'est prêt</b><span>Ouvrez l'application depuis le Bureau ou le menu Démarrer. Les fichiers .algo s'ouvrent d'un double-clic.</span></li>
+          </ol>
+          <p class="note"><b>« Windows a protégé votre ordinateur » ?</b> C'est normal pour une nouvelle application qui n'est pas encore signée. Cliquez sur <b>Informations complémentaires</b>, puis sur <b>Exécuter quand même</b>.</p>
+        </div>
+        <div>
+          <h3><svg class="os" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.5-1-2.5-3.9zM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg> Mac</h3>
+          <ol class="steps v">
+            <li><b>Ouvrir le .dmg</b><span>Double-cliquez sur le fichier téléchargé, puis glissez l'application dans le dossier <b>Applications</b>.</span></li>
+            <li><b>Premier lancement</b><span>Ouvrez l'application une fois. Si macOS la bloque, allez dans <b>Réglages Système → Confidentialité et sécurité</b> et cliquez sur <b>Ouvrir quand même</b>.</span></li>
+          </ol>
+          <p class="note"><b>Pourquoi ce blocage ?</b> L'application n'est pas encore certifiée par Apple. Cette étape n'est nécessaire qu'au premier lancement.</p>
+        </div>
+      </div>
     </section>
 
     <section id="questions">
       <h2>Questions fréquentes</h2>
       <details><summary>L'application est-elle gratuite ?</summary><p>Oui, entièrement, sans publicité ni compte.</p></details>
       <details><summary>Faut-il Internet ?</summary><p>Seulement pour le téléchargement. L'application installée fonctionne entièrement hors ligne.</p></details>
-      <details><summary>Et sur Mac, Linux, tablette ou Chromebook ?</summary><p>Utilisez la <a href="app/">version en ligne</a> : elle fonctionne dans n'importe quel navigateur récent. Votre algorithme est gardé dans le navigateur, et vous pouvez l'enregistrer en fichier .algo.</p></details>
-      <details><summary>Comment désinstaller ?</summary><p>Paramètres Windows → Applications → « Exécuteur d'algorithmes » → Désinstaller.</p></details>
+      <details><summary>Quels ordinateurs sont compatibles ?</summary><p>Windows 10 et 11 en 64 ou 32 bits, et macOS 11 (Big Sur) ou plus récent, sur Mac Apple Silicon comme sur Mac Intel. Voir la section <a href="#telecharger">Télécharger</a>.</p></details>
+      <details><summary>Et sur Linux, tablette ou Chromebook ?</summary><p>Utilisez la <a href="app/">version en ligne</a> : elle fonctionne dans n'importe quel navigateur récent. Votre algorithme est gardé dans le navigateur, et vous pouvez l'enregistrer en fichier .algo.</p></details>
+      <details><summary>Comment désinstaller ?</summary><p>Windows : Paramètres → Applications → « Exécuteur d'algorithmes » → Désinstaller. Mac : faites glisser l'application du dossier Applications vers la Corbeille.</p></details>
       <details><summary>Mes fichiers .algo sont-ils compatibles avec la version en ligne ?</summary><p>Oui. Un fichier .algo est un simple texte : il s'ouvre dans les deux versions, et même dans le Bloc-notes.</p></details>
     </section>
 
     <div class="final">
       <h2>Prêt à exécuter votre premier algorithme ?</h2>
-      <p>Installez l'application sur Windows, ou commencez tout de suite dans le navigateur.</p>
+      <p>Installez l'application sur Windows ou sur Mac, ou commencez tout de suite dans le navigateur.</p>
       <div class="cta">
-        <a class="btn primary" href="https://github.com/mamounbq1/executeur-algorithmes/releases/latest/download/Executeur-algorithmes-Setup-1.0.0.exe">Télécharger pour Windows</a>
+        <a class="btn primary" href="#telecharger">Télécharger</a>
         <a class="btn ghost" href="app/">Essayer en ligne</a>
       </div>
     </div>
   </main>
 
-  <footer>Exécuteur d'algorithmes · version 1.0.0</footer>
+  <footer>Exécuteur d'algorithmes · version 1.0.1 · <a href="https://github.com/mamounbq1/executeur-algorithmes">code source</a></footer>
 </div>
+<script>
+// Met en avant la bonne version selon le système du visiteur.
+(async function(){
+  const ua=navigator.userAgent, NAMES={"win-x64":"Windows (64 bits)","win-ia32":"Windows (32 bits)","mac-arm64":"Mac (Apple Silicon)","mac-x64":"Mac (Intel)"};
+  let os=/Mac OS X|Macintosh/.test(ua)?"mac":/Windows/.test(ua)?"win":null, arch=null;
+  if(/iPhone|iPad|Android/.test(ua)||(os==="mac"&&navigator.maxTouchPoints>1)) os=null;
+  try{ if(navigator.userAgentData&&navigator.userAgentData.getHighEntropyValues){
+    const v=await navigator.userAgentData.getHighEntropyValues(["architecture","bitness","platform"]);
+    if(v.platform==="macOS") os="mac"; else if(v.platform==="Windows") os="win"; else if(v.platform) os=null;
+    if(os==="mac") arch=v.architecture==="arm"?"arm64":"x64";
+    if(os==="win") arch=v.bitness==="32"?"ia32":"x64"; } }catch(e){}
+  if(os==="win"&&!arch) arch=/Win64|WOW64|x64/.test(ua)?"x64":"ia32";
+  if(os==="mac"&&!arch){ try{ const gl=document.createElement("canvas").getContext("webgl"), ext=gl&&gl.getExtension("WEBGL_debug_renderer_info"), r=ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):"";
+    arch=/Apple M|Apple GPU/.test(r)?"arm64":/Intel|AMD|Radeon/.test(r)?"x64":null; }catch(e){} }
+  if(!os) return;
+  const key=os+"-"+(arch||(os==="mac"?"arm64":"x64")), card=document.querySelector('[data-dl="'+key+'"]');
+  if(!card) return;
+  card.classList.add("reco"); card.parentNode.classList.add("has-reco"); card.insertAdjacentHTML("afterbegin",'<span class="badge">Pour cet ordinateur</span>');
+  const dl=document.getElementById("dl"); dl.href=card.querySelector("a").href;
+  document.getElementById("dl-label").textContent="Télécharger pour "+NAMES[key];
+})();
+</script>
 </body>
 </html>
