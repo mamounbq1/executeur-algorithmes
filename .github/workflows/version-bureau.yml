@@ -23,7 +23,7 @@ jobs:
           - os: windows-latest
             cmd: npx electron-builder --win nsis --x64 --publish never && npx electron-builder --win nsis --ia32 --publish never
           - os: macos-latest
-            cmd: npx electron-builder --mac dmg --x64 --arm64 --publish never
+            cmd: npx electron-builder --mac dmg --x64 --publish never && npx electron-builder --mac dmg --arm64 --publish never
     runs-on: ${{ matrix.os }}
     defaults:
       run:
