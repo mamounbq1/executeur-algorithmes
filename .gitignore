@@ -1,0 +1,10 @@
+# Dépendances et fichiers générés de la version de bureau
+desktop/node_modules/
+desktop/dist/
+desktop/app/
+
+# L'installateur est publié dans les Releases GitHub, pas dans le dépôt
+site/telechargement/
+
+# Vercel
+.vercel/

@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exécuteur d'algorithmes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Plan : atelier en deux colonnes — l'algorithme à gauche, l'écran et la mémoire à droite. */
+:root{
+  --bg:#f1f5f4; --surface:#ffffff; --ink:#16292a; --muted:#566b6c; --line:#d3dedc;
+  --accent:#0f7173; --accent-ink:#ffffff; --accent-soft:#e1efed;
+  --exec:#fde6b8; --exec-ink:#7a4a00; --err:#b83227; --err-bg:#fbe4e0; --ok:#2c7a3f;
+  --console-bg:#0f2e2f; --console-ink:#e6f1ef; --console-muted:#8fb0ad; --console-user:#f2a541;
+  --kw:#0f7173; --ty:#8e3b6b; --str:#a35200; --num:#3a55a4; --com:#7b8d8e;
+  --display:"Bricolage Grotesque","IBM Plex Sans",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --lh:24px; --pad:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0c1819; --surface:#132526; --ink:#e3eeec; --muted:#93aaa8; --line:#27403f;
+    --accent:#43b9b3; --accent-ink:#06201f; --accent-soft:#1a3534;
+    --exec:#4b3b12; --exec-ink:#ffd58a; --err:#ff9384; --err-bg:#45201b; --ok:#7fd08f;
+    --console-bg:#081314; --console-ink:#e6f1ef; --console-muted:#7f9c99; --console-user:#f2a541;
+    --kw:#5fd0c9; --ty:#e39ac4; --str:#f0b46a; --num:#9db4ff; --com:#6f8685;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0c1819; --surface:#132526; --ink:#e3eeec; --muted:#93aaa8; --line:#27403f;
+  --accent:#43b9b3; --accent-ink:#06201f; --accent-soft:#1a3534;
+  --exec:#4b3b12; --exec-ink:#ffd58a; --err:#ff9384; --err-bg:#45201b; --ok:#7fd08f;
+  --console-bg:#081314; --console-ink:#e6f1ef; --console-muted:#7f9c99; --console-user:#f2a541;
+  --kw:#5fd0c9; --ty:#e39ac4; --str:#f0b46a; --num:#9db4ff; --com:#6f8685;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+@media (min-width:861px){ html{zoom:.8} }
+.zoom{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.zoom button{border:0;background:none;padding:7px 10px;cursor:pointer;font-weight:700;line-height:1}
+.zoom button:hover{background:var(--accent-soft)}
+.zoom #zoom-val{min-width:4.2em;font-weight:600;font-size:13px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;display:flex;flex-direction:column}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;padding:14px 20px 10px}
+h1{font-family:var(--display);font-size:24px;line-height:1.1;margin:0;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted);flex:1 1 260px}
+.ex{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:100%}
+
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:0 20px 12px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.sym{font-family:var(--mono);padding:8px 11px;font-weight:600}
+.speed{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.speed input{width:90px;accent-color:var(--accent)}
+.sep{width:1px;height:26px;background:var(--line);margin:0 4px}
+.status{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:14px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--ink)}
+.status::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.status[data-s="run"]::before{background:var(--accent)}
+.status[data-s="step"]::before,.status[data-s="input"]::before{background:var(--console-user)}
+.status[data-s="done"]::before{background:var(--ok)}
+.status[data-s="error"]{background:var(--err-bg);color:var(--err)}
+.status[data-s="error"]::before{background:var(--err)}
+
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,var(--lf,1.1fr)) 14px minmax(0,var(--rf,1fr));gap:0;padding:0 20px 14px}
+#colR{gap:0}
+.split{position:relative;flex:none;touch-action:none;outline-offset:-2px}
+.split::after{content:"";position:absolute;background:var(--line);border-radius:3px;transition:background .15s}
+.split:hover::after,.split:focus-visible::after,.split.drag::after{background:var(--accent)}
+.split.v{cursor:col-resize}
+.split.v::after{left:5px;width:4px;top:calc(50% - 22px);height:44px}
+.split.h{height:12px;cursor:row-resize}
+.split.h::after{top:4px;height:4px;left:calc(50% - 22px);width:44px}
+body.resizing,body.resizing *{user-select:none!important}
+body.resizing.rv,body.resizing.rv *{cursor:col-resize!important}
+body.resizing.rh,body.resizing.rh *{cursor:row-resize!important}
+.win{display:inline-flex;gap:2px;margin-left:auto;flex:none}
+.tabs+.win{margin-left:8px}
+.wbtn{border:1px solid transparent;background:none;border-radius:6px;width:26px;height:24px;padding:0;display:inline-grid;place-items:center;cursor:pointer;color:var(--muted)}
+.wbtn:hover{border-color:var(--line);background:var(--bg);color:var(--ink)}
+.wbtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6}
+.panel.collapsed>*:not(h2){display:none!important}
+.panel.collapsed{flex:0 0 auto!important;min-height:0!important;max-height:none!important}
+.panel.collapsed h2{border-bottom:0}
+#colR:has(>#pEcran.collapsed)>#pMem:not(.collapsed){flex:1 1 0!important;max-height:none!important}
+#colR:has(>.panel.collapsed)>.split.h{visibility:hidden}
+main.maxed{grid-template-columns:minmax(0,1fr)}
+main.maxed>.split,main.maxed>.col:not(.has-max),main.maxed .col.has-max>:not(.maxed){display:none!important}
+main.maxed .panel.maxed{flex:1 1 0!important;max-height:none!important}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.panel h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0;padding:9px 14px;border-bottom:1px solid var(--line);font-weight:600;display:flex;align-items:center;gap:10px}
+.grow{flex:1 1 0;min-height:180px}
+.memp{flex:0 1 auto;max-height:46%;min-height:0}
+
+.editor{flex:1;min-height:260px;display:flex;font-family:var(--mono);font-size:15px;line-height:var(--lh);position:relative}
+.gutter{width:46px;flex:none;overflow:hidden;color:var(--muted);text-align:right;border-right:1px solid var(--line);user-select:none;background:var(--bg)}
+.gutter div{padding:var(--pad) 8px var(--pad) 0}
+.gutter span{display:block}
+.gutter span.cur{color:var(--exec-ink);font-weight:600}
+.gutter span.bad{color:var(--err);font-weight:600}
+.code-area{position:relative;flex:1;min-width:0;overflow:hidden}
+.band{position:absolute;left:0;right:0;height:var(--lh);background:var(--exec);display:none;pointer-events:none}
+.band.err{background:var(--err-bg)}
+#hl,#code{position:absolute;inset:0;margin:0;padding:var(--pad);border:0;font:inherit;line-height:var(--lh);white-space:pre;tab-size:3;letter-spacing:0}
+#hl{overflow:hidden;pointer-events:none;color:var(--ink)}
+#code{background:transparent;color:transparent;caret-color:var(--ink);resize:none;overflow:auto;outline:none;width:100%;height:100%}
+#code::selection{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+.k{color:var(--kw);font-weight:600}.t{color:var(--ty);font-weight:600}.s{color:var(--str)}.n{color:var(--num)}.c{color:var(--com);font-style:italic}.o{color:var(--kw);font-weight:600}
+
+.errbox{display:none;border:1px solid var(--err);background:var(--err-bg);border-radius:12px;padding:12px 14px}
+.errbox.on{display:block}
+.errbox strong{color:var(--err);display:block;margin-bottom:2px}
+.errbox .hint{margin-top:6px}
+.errbox .hint b{font-weight:600}
+.warn{display:none;border:1px solid var(--line);background:var(--exec);color:var(--exec-ink);border-radius:12px;padding:9px 14px;font-size:14px}
+.warn.on{display:block}
+
+.console{flex:1;min-height:40px;overflow:auto;background:var(--console-bg);color:var(--console-ink);font-family:var(--mono);font-size:15px;line-height:1.6;padding:12px 14px}
+.console .line{white-space:pre-wrap;word-break:break-word;min-height:1.6em}
+.console .sys{color:var(--console-muted);font-family:var(--body);font-size:14px}
+.console .bad{color:#ffb4a8;font-family:var(--body);font-size:14px}
+.console .typed{color:var(--console-user);font-weight:600}
+.console form{display:inline-flex;gap:6px;vertical-align:middle;max-width:100%}
+.console input{background:#ffffff14;border:1px solid var(--console-user);border-radius:6px;color:var(--console-ink);font-family:var(--mono);font-size:16px;padding:3px 8px;width:11em;max-width:60vw}
+.console form button{border:0;border-radius:6px;background:var(--console-user);color:#201400;font-weight:600;padding:3px 12px;cursor:pointer;font-family:var(--body)}
+
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tab{border:0;background:none;padding:3px 10px;border-radius:6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;text-transform:none;letter-spacing:0}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--ink)}
+.mem{flex:1;min-height:40px;overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:6px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface);color:var(--muted);font-weight:600;font-size:13px}
+td.v,td.m{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.v.chg{background:var(--exec);color:var(--exec-ink);font-weight:600}
+td.none{color:var(--muted)}
+.empty{padding:14px;color:var(--muted);font-size:14px}
+td.arr{white-space:normal}
+tr.fgrp td{background:var(--bg);color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.04em;padding:5px 12px}
+tr.fgrp.cur td{background:var(--accent-soft);color:var(--ink)}
+.refto{font-size:12px;color:var(--accent);font-weight:600;white-space:nowrap}
+.cells{display:flex;flex-wrap:wrap;gap:4px}
+.cell{display:inline-flex;flex-direction:column;align-items:stretch;min-width:2.6em;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-family:var(--mono);text-align:center}
+.cell i{font-style:normal;font-size:11px;color:var(--muted);background:var(--bg);padding:0 5px;border-bottom:1px solid var(--line)}
+.cell b{font-weight:600;padding:2px 7px}
+.cell.none b{color:var(--muted);font-weight:400}
+.cell.chg{border-color:var(--exec-ink)}
+.cell.chg b{background:var(--exec);color:var(--exec-ink)}
+.grid{display:inline-grid;gap:4px;font-family:var(--mono);font-size:13px}
+.grid i{font-style:normal;color:var(--muted);font-size:11px;text-align:center;align-self:center;padding:0 4px}
+.grid b{border:1px solid var(--line);border-radius:5px;padding:2px 7px;text-align:center;font-weight:600}
+.grid b.none{color:var(--muted);font-weight:400}
+.grid b.chg{background:var(--exec);color:var(--exec-ink);border-color:var(--exec-ink)}
+.more{color:var(--muted);font-size:13px;align-self:center}
+
+details{margin:0 20px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+summary{cursor:pointer;font-weight:600;display:flex;align-items:center;gap:10px}
+summary::after{content:"Ouvrir ▴";margin-left:auto;font-size:13px;color:var(--muted);font-weight:600}
+details[open]{position:fixed;left:20px;right:20px;bottom:16px;margin:0;max-height:min(75vh,640px);overflow:auto;z-index:20;padding:0 18px 16px;
+  background:var(--surface);box-shadow:0 0 0 100vmax #00000073,0 12px 40px #0006}
+details[open]>summary{position:sticky;top:0;z-index:1;background:var(--surface);padding:12px 0 10px;border-bottom:1px solid var(--line)}
+details[open]>summary::after{content:"✕ Fermer";color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 10px;background:var(--bg)}
+details[open]>summary:hover::after{border-color:var(--accent)}
+@media (max-width:600px){ details[open]{left:8px;right:8px;bottom:8px;max-height:85vh} }
+.memo{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px 24px;margin-top:10px}
+.memo h3{font-size:13px;margin:0 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.memo pre{margin:0;font-family:var(--mono);font-size:13.5px;line-height:1.55;white-space:pre-wrap}
+.memo p{margin:0;font-size:14px}
+
+[hidden]{display:none!important}
+.bar.ins{gap:6px}
+.barlbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-right:4px}
+.grp{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.chip{padding:5px 11px;font-size:14px}
+.chip.sym{padding:5px 10px}
+.btn.danger{color:var(--err);border-color:var(--err)}
+
+.flow{flex:1;min-height:260px;overflow:auto;padding:18px 16px 30px;--ln:var(--muted);
+  --fc-proc:color-mix(in srgb,var(--accent) 22%,var(--surface));--fc-io:var(--exec);--fc-dec:color-mix(in srgb,var(--ty) 22%,var(--surface))}
+.fc{display:flex;flex-direction:column;align-items:center;width:max-content;min-width:100%;position:relative}
+.fcs{display:flex;gap:56px;align-items:flex-start;justify-content:center;width:max-content;min-width:100%}
+.fcs>.fc{min-width:0}
+.fc.sub{padding-left:40px;border-left:2px dashed var(--line)}
+button.node.term{cursor:pointer}
+.node.ret{background:var(--fc-proc);border-radius:999px;box-shadow:inset 0 0 0 2px var(--ln)}
+.node.call{background:var(--fc-proc);border-radius:2px;padding:10px 26px;box-shadow:inset 7px 0 0 -5px var(--ln),inset -7px 0 0 -5px var(--ln)}
+.travel{position:absolute;left:0;top:0;pointer-events:none;z-index:3;overflow:visible}
+.travel polyline{fill:none;stroke:var(--console-user);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.travel circle{fill:var(--console-user);stroke:var(--surface);stroke-width:2.5;filter:drop-shadow(0 0 5px var(--console-user))}
+.data{align-self:flex-start;border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin-bottom:16px;font-size:14px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;max-width:100%}
+.data b{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.data code{font-family:var(--mono)}
+.seq{display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+.conn{width:2px;height:32px;background:var(--ln);position:relative;flex:none}
+.conn::after{content:"";position:absolute;bottom:0;left:-4px;border:5px solid transparent;border-top:7px solid var(--ln);border-bottom:0}
+.conn.na::after{display:none}
+.add{position:absolute;top:50%;left:50%;transform:translate(-50%,-62%);width:22px;height:22px;border-radius:50%;border:1px solid var(--ln);background:var(--surface);color:var(--accent);font-weight:700;line-height:1;padding:0;cursor:pointer;font-size:16px}
+.add:hover{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.lbl{position:absolute;left:16px;top:3px;font-size:12px;font-weight:600;color:var(--muted);font-family:var(--body);white-space:nowrap}
+.node{font-family:var(--mono);font-size:14px;line-height:1.3;padding:10px 18px;border:0;color:var(--ink);white-space:nowrap;position:relative;z-index:1;cursor:pointer;flex:none}
+.node:hover{filter:brightness(.95)}
+.node.term{border-radius:999px;background:var(--console-bg);color:var(--console-ink);font-family:var(--body);font-weight:600;padding:8px 28px;cursor:default;filter:none}
+.node.proc{background:var(--fc-proc);border-radius:4px}
+.node.io{background:var(--fc-io);color:var(--exec-ink);clip-path:polygon(14px 0,100% 0,calc(100% - 14px) 100%,0 100%);padding:10px 30px}
+.node.dec{background:var(--fc-dec);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);height:68px;padding:0 60px;min-width:170px}
+.node.prep{background:var(--fc-dec);clip-path:polygon(18px 0,calc(100% - 18px) 0,100% 50%,calc(100% - 18px) 100%,18px 100%,0 50%);height:44px;padding:0 32px}
+.node.cur{background:var(--console-user);color:#201400}
+.node.bad{background:var(--err);color:var(--surface)}
+.if{display:flex;flex-direction:column;align-items:center}
+.stub{width:2px;height:12px;background:var(--ln)}
+.branches{display:grid;grid-template-columns:1fr 1fr;align-self:stretch}
+.br{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 14px;min-width:96px}
+.br::before,.br::after{content:"";position:absolute;height:2px;background:var(--ln)}
+.br::before{top:0}.br::after{bottom:0}
+.br.l::before,.br.l::after{left:50%;right:0}
+.br.r::before,.br.r::after{left:0;right:50%}
+.br.m::before,.br.m::after{left:0;right:0}
+.fill{width:2px;flex:1;min-height:14px;background:var(--ln)}
+.loop{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 34px 16px}
+.loop::before,.loop::after{content:"";position:absolute;border:2px solid var(--ln);z-index:0}
+.loop::before{left:10px;right:50%;top:34px;bottom:16px;border-right:0;border-radius:8px 0 0 8px}
+.loop::after{left:50%;right:10px;top:34px;bottom:0;border-left:0;border-radius:0 8px 8px 0}
+.loop.for::before,.loop.for::after{top:22px}
+.loop.rep{padding-bottom:0}
+.loop.rep::before{top:0;bottom:34px}
+.loop.rep::after{display:none}
+.loop>.lbl.out{left:auto;right:16px;top:14px}
+.loop.for>.lbl.out{top:3px}
+.loop.rep>.lbl.out{left:16px;right:auto;top:auto;bottom:40px}
+.loop>.up{position:absolute;left:6px;top:50%;border:5px solid transparent;border-bottom:7px solid var(--ln);border-top:0;z-index:1}
+.flow-msg{max-width:46ch;margin:24px auto;text-align:center;color:var(--muted)}
+.flow-msg strong{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+.flow-msg .btn{margin-top:12px}
+
+.modal{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.dlg{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:18px;width:min(460px,100%);display:flex;flex-direction:column;gap:12px;max-height:100%;overflow:auto}
+.dlg h3{margin:0;font-family:var(--display);font-size:19px}
+.types{display:flex;flex-wrap:wrap;gap:6px}
+.types .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.fields{display:flex;flex-direction:column;gap:10px}
+.fields label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600}
+.fields input,.fields select{font-family:var(--mono);font-size:16px;font-weight:400;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);width:100%}
+.dlg-err{color:var(--err);font-size:14px}
+.dlg-err:empty{display:none}
+.dlg-actions{display:flex;gap:8px;align-items:center}
+.dlg-actions .sp{flex:1}
+
+@media (max-width:860px){
+  .flow{height:440px;flex:none}
+  html,body{height:auto}
+  main{grid-template-columns:minmax(0,1fr);gap:14px}
+  .split{display:none}
+  #colR{gap:12px}
+  #pMem{flex:none!important}
+  .editor{height:340px;flex:none}
+  .console{height:220px;flex:none}
+  .mem{max-height:260px}
+  .memp{max-height:none}
+  .grow{flex:none}
+  .status{margin-left:0}
+  .editor{font-size:16px}
+}
+@media (prefers-reduced-motion:no-preference){ td.v{transition:background .25s} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Exécuteur d'algorithmes</h1>
+  <p>Écrivez votre algorithme en français, puis exécutez-le d'un coup ou suivez-le ligne par ligne.</p>
+  <div class="ex">
+    <span class="zoom" role="group" aria-label="Zoom de la page">
+      <button type="button" id="zoom-out" title="Dézoomer" aria-label="Dézoomer">−</button>
+      <button type="button" id="zoom-val" title="Revenir à 80 %">80 %</button>
+      <button type="button" id="zoom-in" title="Zoomer" aria-label="Zoomer">+</button>
+    </span>
+    <label for="examples">Exemples</label>
+    <select id="examples"></select>
+    <button class="btn" id="open" type="button" title="Ouvrir un algorithme enregistré (.algo ou .txt)">Ouvrir…</button>
+    <button class="btn" id="save" type="button" title="Enregistrer l'algorithme dans un fichier (Ctrl+S)">Enregistrer</button>
+    <input type="file" id="file" accept=".algo,.txt,text/plain" hidden>
+  </div>
+</header>
+
+<div class="bar">
+  <button class="btn primary" id="run" type="button">▶ Exécuter</button>
+  <button class="btn" id="step" type="button">Pas à pas</button>
+  <button class="btn" id="auto" type="button" title="Avance tout seul, une instruction à la fois">⏵ Lecture auto</button>
+  <label class="speed" title="Vitesse de la lecture automatique">Lent<input type="range" id="speed" min="1" max="5" step="1" value="3" aria-label="Vitesse de la lecture automatique">Rapide</label>
+  <button class="btn" id="stop" type="button" disabled>Arrêter</button>
+  <span class="status" id="status" data-s="idle">Prêt</span>
+</div>
+<div class="bar ins" id="insbar">
+  <span class="barlbl">Insérer</span>
+  <span class="grp" id="ins-text">
+    <button class="btn chip" type="button" data-snip="ecrire">Écrire</button>
+    <button class="btn chip" type="button" data-snip="lire">Lire</button>
+    <button class="btn chip" type="button" data-snip="si">Si</button>
+    <button class="btn chip" type="button" data-snip="sisinon">Si … Sinon</button>
+    <button class="btn chip" type="button" data-snip="selon">Selon</button>
+    <button class="btn chip" type="button" data-snip="pour">Pour</button>
+    <button class="btn chip" type="button" data-snip="tantque">Tant que</button>
+    <button class="btn chip" type="button" data-snip="fonction" title="Ajoute une fonction à la fin du texte">Fonction</button>
+    <button class="btn chip" type="button" data-snip="procedure" title="Ajoute une procédure à la fin du texte">Procédure</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button class="btn chip sym" type="button" data-ins="←" title="Affectation (ou tapez &lt;-)">←</button>
+    <button class="btn chip sym" type="button" data-ins="≠" title="Différent (ou tapez &lt;&gt;)">≠</button>
+    <button class="btn chip sym" type="button" data-ins="≤" title="Inférieur ou égal (ou tapez &lt;=)">≤</button>
+    <button class="btn chip sym" type="button" data-ins="≥" title="Supérieur ou égal (ou tapez &gt;=)">≥</button>
+  </span>
+  <span class="grp" id="ins-flow" hidden>Cliquez sur un <b>+</b> pour ajouter un symbole à cet endroit, ou sur un symbole pour le modifier.</span>
+</div>
+
+<main id="main">
+  <div class="col" id="colL">
+    <section class="panel grow" id="pAlgo" aria-label="Algorithme">
+      <h2>Algorithme
+        <span class="tabs" role="tablist">
+          <button class="tab" id="view-text" role="tab" aria-selected="true" type="button">Texte</button>
+          <button class="tab" id="view-flow" role="tab" aria-selected="false" type="button">Organigramme</button>
+        </span>
+        <span class="win" data-name="Algorithme"><button type="button" class="wbtn" data-act="min"></button><button type="button" class="wbtn" data-act="max"></button></span>
+      </h2>
+      <div class="editor" id="editor">
+        <div class="gutter" aria-hidden="true"><div id="gutter"></div></div>
+        <div class="code-area">
+          <div class="band" id="band"></div>
+          <pre id="hl" aria-hidden="true"></pre>
+          <textarea id="code" spellcheck="false" wrap="off" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Texte de l'algorithme"></textarea>
+        </div>
+      </div>
+      <div class="flow" id="flow" hidden></div>
+    </section>
+    <div class="errbox" id="errbox" role="alert"></div>
+    <div class="warn" id="warn"></div>
+  </div>
+
+  <div class="split v" id="splitV" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Ajuster la largeur des colonnes (double-clic : taille d'origine)" title="Glisser pour ajuster · double-clic : taille d'origine"></div>
+  <div class="col" id="colR">
+    <section class="panel grow" id="pEcran" aria-label="Écran">
+      <h2>Écran <span class="win" data-name="Écran"><button type="button" class="wbtn" data-act="min"></button><button type="button" class="wbtn" data-act="max"></button></span></h2>
+      <div class="console" id="console" role="log" aria-live="polite"></div>
+    </section>
+    <div class="split h" id="splitH" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Ajuster la hauteur de la mémoire (double-clic : taille d'origine)" title="Glisser pour ajuster · double-clic : taille d'origine"></div>
+    <section class="panel memp" id="pMem" aria-label="Mémoire">
+      <h2>Mémoire
+        <span class="tabs" role="tablist">
+          <button class="tab" id="tab-vars" role="tab" aria-selected="true" type="button">Variables</button>
+          <button class="tab" id="tab-trace" role="tab" aria-selected="false" type="button">Table de trace</button>
+        </span>
+        <span class="win" data-name="Mémoire"><button type="button" class="wbtn" data-act="min"></button><button type="button" class="wbtn" data-act="max"></button></span>
+      </h2>
+      <div class="mem" id="mem-vars"></div>
+      <div class="mem" id="mem-trace" hidden></div>
+    </section>
+  </div>
+</main>
+
+<details>
+  <summary>Aide-mémoire de la syntaxe</summary>
+  <div class="memo">
+    <div><h3>Structure</h3><pre>Algorithme Nom
+Constantes
+   PI = 3.14
+Variables
+   a, b : Entier
+   moy : Réel
+Début
+   instructions
+Fin</pre></div>
+    <div><h3>Instructions de base</h3><pre>x ← 5
+Lire(x)
+Écrire("Résultat : ", x)
+// un commentaire</pre>
+      <p>Types : Entier, Réel, Caractère, Chaîne, Booléen, Tableau.</p></div>
+    <div><h3>Tableaux</h3><pre>T : Tableau[1..10] de Entier
+M : Tableau[1..3, 1..4] de Réel
+
+T[i] ← 0
+Lire(T[i])
+Écrire(T[i])
+M[i, j] ← 1
+taille(T)   // nombre de cases</pre>
+      <p>Forme courte acceptée : <code>T[10] : Entier</code> (cases 1 à 10).</p></div>
+    <div><h3>Si</h3><pre>Si x ≥ 10 Alors
+   ...
+Sinon
+   ...
+FinSi</pre></div>
+    <div><h3>Selon</h3><pre>Selon choix Faire
+   Cas 1 :
+      ...
+   Cas 2, 3 :
+      ...
+   Cas 10..20 :
+      ...
+   Sinon :
+      ...
+FinSelon</pre></div>
+    <div><h3>Fonctions et procédures</h3><pre>Fonction Max(a : Entier, b : Entier) : Entier
+Début
+   Si a > b Alors
+      Retourner a
+   FinSi
+   Retourner b
+FinFonction
+
+Procédure Echanger(Var x, y : Entier)
+Variables
+   t : Entier
+Début
+   t ← x
+   x ← y
+   y ← t
+FinProcédure</pre>
+      <p>À placer avant le <code>Début</code> de l'algorithme ou après sa <code>Fin</code>. Appel : <code>m ← Max(3, 7)</code> et <code>Echanger(a, b)</code>. <code>Var</code> (ou <code>E/S</code>) : les modifications du paramètre sont gardées dans la variable donnée. Paramètre tableau : <code>T : Tableau de Entier</code>.</p></div>
+    <div><h3>Boucles</h3><pre>Pour i de 1 à 10 Faire
+   ...
+FinPour
+
+Tant que x &lt; 0 Faire
+   ...
+FinTantQue</pre></div>
+    <div><h3>Opérateurs</h3><pre>+  -  *  /  div  mod  ^
+=  ≠  &lt;  &gt;  ≤  ≥
+ET  OU  NON</pre>
+      <p>Fonctions : racine(x), abs(x), ent(x), arrondi(x, n), carre(x), longueur(texte), max(a, b), min(a, b), taille(T).</p></div>
+    <div><h3>Écriture tolérée</h3>
+      <p>Majuscules et accents sont libres : <code>Ecrire</code>, <code>écrire</code> et <code>ÉCRIRE</code> sont identiques. Vous pouvez taper <code>&lt;-</code> pour ←, <code>&lt;&gt;</code> pour ≠, <code>&lt;=</code> et <code>&gt;=</code>. <code>Fin Si</code>, <code>Fin Pour</code> et <code>Fin Tant que</code> sont acceptés, ainsi que <code>Répéter … Jusqu'à</code>.</p></div>
+  </div>
+</details>
+
+<div class="modal" id="modal" hidden>
+  <form class="dlg" id="dlg" novalidate>
+    <h3 id="dlg-title"></h3>
+    <div class="types" id="dlg-types"></div>
+    <div class="fields" id="dlg-fields"></div>
+    <div class="dlg-err" id="dlg-err" role="alert"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn danger" id="dlg-del">Supprimer</button>
+      <span class="sp"></span>
+      <button type="button" class="btn" id="dlg-cancel">Annuler</button>
+      <button type="submit" class="btn primary" id="dlg-ok">Ajouter</button>
+    </div>
+  </form>
+</div>
+
+<script id="core">
+const Algo = (function(){
+  "use strict";
+  const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+  class AlgoError extends Error{ constructor(line,msg,hint){ super(msg); this.line=line; this.hint=hint||""; this.algo=true; } }
+
+  const TYPES = {entier:"Entier",reel:"Réel",nombre:"Réel",caractere:"Caractère",chaine:"Chaîne",texte:"Chaîne",booleen:"Booléen",logique:"Booléen"};
+  const RESERVED = new Set(["algorithme","variables","variable","constantes","constante","debut","fin","si","alors","sinon","finsi","pour","de","pas","faire","finpour","tant","que","tantque","fintantque","repeter","jusqua","lire","ecrire","afficher","et","ou","non","mod","div","vrai","faux","entier","reel","chaine","caractere","booleen","tableau","selon","cas","finselon","fonction","procedure","finfonction","finprocedure","retourner","appeler"]);
+  const ALIAS = {afficher:"ecrire",ecrireln:"ecrire",saisir:"lire",fintq:"fintantque",ftq:"fintantque",fsi:"finsi",fpour:"finpour",algo:"algorithme",programme:"algorithme",var:"variables",variable:"variables",const:"constantes",constante:"constantes",repete:"repeter",begin:"debut",end:"fin",suivant:"selon",finsuivant:"finselon",autrement:"sinon",retourne:"retourner",renvoyer:"retourner",renvoie:"retourner"};
+  const HEADS = new Set(["algorithme","variables","constantes","debut","fin","si","sinon","finsi","pour","finpour","tantque","fintantque","repeter","jusqua","lire","ecrire","selon","cas","finselon","fonction","procedure","finfonction","finprocedure","retourner","appeler"]);
+  const NICE = {algorithme:"Algorithme",variables:"Variables",constantes:"Constantes",debut:"Début",fin:"Fin",si:"Si",sinon:"Sinon",finsi:"FinSi",pour:"Pour",finpour:"FinPour",tantque:"Tant que",fintantque:"FinTantQue",repeter:"Répéter",jusqua:"Jusqu'à",lire:"Lire",ecrire:"Écrire",alors:"Alors",faire:"Faire",selon:"Selon",cas:"Cas",finselon:"FinSelon",fonction:"Fonction",procedure:"Procédure",finfonction:"FinFonction",finprocedure:"FinProcédure",retourner:"Retourner",appeler:"Appeler"};
+
+  function lev(a,b){ const m=a.length,n=b.length; let p=[]; for(let j=0;j<=n;j++)p[j]=j;
+    for(let i=1;i<=m;i++){ const c=[i]; for(let j=1;j<=n;j++) c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1)); p=c; } return p[n]; }
+  function closest(word,list){ let best=null,bd=3; for(const w of list){ const d=lev(word,w); if(d<bd && d<Math.max(w.length,word.length)){ bd=d; best=w; } } return best; }
+
+  // ---------- Analyse lexicale ----------
+  const isL = c => /[A-Za-zÀ-ÖØ-öø-ÿ_]/.test(c);
+  const isD = c => c>="0" && c<="9";
+  const OPS2 = {"..":"..","<-":"ASSIGN",":=":"ASSIGN","<=":"<=",">=":">=","<>":"<>","!=":"<>","==":"="};
+  const OPS1 = {"←":"ASSIGN","≤":"<=","≥":">=","≠":"<>","=":"=","<":"<",">":">","+":"+","-":"-","−":"-","*":"*","×":"*","/":"/","÷":"/","^":"^","(":"(",")":")","[":"[","]":"]",",":",",":":":","%":"mod"};
+  const QUOTES = {'"':'"',"“":"”","”":"”","«":"»","'":"'","‘":"’","’":"’"};
+
+  function tokenize(s,line){
+    const toks=[]; let i=0; const L=s.length;
+    while(i<L){
+      const c=s[i];
+      if(c===" "||c==="\t"||c===" "){ i++; continue; }
+      if(c===";"){ toks.push({t:"op",v:";",raw:";"}); i++; continue; }
+      if(c==="/"&&s[i+1]==="/") break;
+      if(isD(c)){ let j=i; while(j<L&&isD(s[j]))j++;
+        if(s[j]==="."&&isD(s[j+1]||"")){ j++; while(j<L&&isD(s[j]))j++; }
+        toks.push({t:"num",v:parseFloat(s.slice(i,j)),raw:s.slice(i,j)}); i=j; continue; }
+      if(isL(c)){ let j=i; while(j<L&&(isL(s[j])||isD(s[j])))j++;
+        let raw=s.slice(i,j), n=norm(raw);
+        if(n==="jusqu"&&/['’]/.test(s[j]||"")&&/[aàAÀ]/.test(s[j+1]||"")&&!isL(s[j+2]||"")){ raw=s.slice(i,j+2); n="jusqua"; j+=2; }
+        toks.push({t:"id",raw,n}); i=j; continue; }
+      if(QUOTES[c]){ const close=QUOTES[c]; let j=i+1;
+        while(j<L&&s[j]!==close&&!(c!=="'"&&c!=="‘"&&c!=="’"&&s[j]==='"'))j++;
+        if(j>=L) throw new AlgoError(line,"Le texte commencé par "+c+" n'est pas fermé.","Ajoutez le guillemet fermant à la fin du texte, par exemple : \"Bonjour\".");
+        let v=s.slice(i+1,j); if(c==="«") v=v.replace(/^ | $|^ | $/g,"");
+        toks.push({t:"str",v,raw:s.slice(i,j+1)}); i=j+1; continue; }
+      const two=s.substr(i,2);
+      if(OPS2[two]){ toks.push({t:"op",v:OPS2[two],raw:two}); i+=2; continue; }
+      if(OPS1[c]){ toks.push({t:"op",v:OPS1[c],raw:c}); i++; continue; }
+      if(c==="."&&s.slice(i+1).trim()===""){ i++; continue; }
+      throw new AlgoError(line,"Le caractère « "+c+" » n'est pas reconnu.", c==="."?"Le point sert seulement dans les nombres à virgule, par exemple 3.14.":"Supprimez-le ou remplacez-le par un symbole de l'aide-mémoire.");
+    }
+    return toks;
+  }
+
+  function headOf(toks){
+    const t0=toks[0]; if(t0.t!=="id") return [null,toks];
+    let n=t0.n.replace(/_/g,""), used=1;
+    const n1=toks[1]&&toks[1].t==="id"?toks[1].n:null;
+    if(n==="fin"&&n1){
+      if(n1==="si"){n="finsi";used=2;} else if(n1==="pour"){n="finpour";used=2;}
+      else if(n1==="tantque"){n="fintantque";used=2;}
+      else if(n1==="tant"){n="fintantque";used=(toks[2]&&toks[2].n==="que")?3:2;}
+      else if(n1==="selon"||n1==="suivant"){n="finselon";used=2;}
+      else if(n1==="fonction"){n="finfonction";used=2;}
+      else if(n1==="procedure"){n="finprocedure";used=2;}
+      else if(n1==="algorithme"||n1==="algo"){used=2;}
+    } else if(n==="tant"&&n1==="que"){ n="tantque"; used=2; }
+    if(ALIAS[n]) n=ALIAS[n];
+    return HEADS.has(n)?[n,toks.slice(used)]:[null,toks];
+  }
+
+  // ---------- Expressions ----------
+  function exprParser(toks,line){
+    let p=0;
+    const peek=()=>toks[p];
+    const isOp=v=>toks[p]&&toks[p].t==="op"&&toks[p].v===v;
+    const isId=n=>toks[p]&&toks[p].t==="id"&&toks[p].n===n;
+    function fail(){ const t=toks[p];
+      if(!t) throw new AlgoError(line,"L'expression est incomplète.","Il manque une valeur ou une variable à la fin de la ligne.");
+      throw new AlgoError(line,"« "+t.raw+" » n'est pas à sa place ici.","Vérifiez l'expression : il manque peut-être une valeur, un opérateur ou une parenthèse.");
+    }
+    function or(){ let a=and(); while(isId("ou")){ p++; a={k:"bin",op:"ou",a,b:and()}; } return a; }
+    function and(){ let a=not(); while(isId("et")){ p++; a={k:"bin",op:"et",a,b:not()}; } return a; }
+    function not(){ if(isId("non")){ p++; return {k:"un",op:"non",a:not()}; } return cmp(); }
+    function cmp(){ let a=add(); const t=peek();
+      if(t&&t.t==="op"){
+        if(["=","<>","<",">","<=",">="].includes(t.v)){ p++; return {k:"bin",op:t.v,a,b:add()}; }
+        if(t.v==="ASSIGN"&&t.raw==="<-"){ p++; return {k:"bin",op:"<",a,b:{k:"un",op:"-",a:add()}}; }
+        if(t.v==="ASSIGN") throw new AlgoError(line,"Le symbole ← sert à donner une valeur, pas à comparer.","Pour comparer deux valeurs, utilisez = (égal) ou ≠ (différent).");
+      }
+      return a; }
+    function add(){ let a=mul(); while(isOp("+")||isOp("-")){ const op=toks[p++].v; a={k:"bin",op,a,b:mul()}; } return a; }
+    function mul(){ let a=unary(); while(isOp("*")||isOp("/")||isOp("mod")||isId("div")||isId("mod")){ const t=toks[p++]; a={k:"bin",op:t.t==="id"?t.n:t.v,a,b:unary()}; } return a; }
+    function unary(){ if(isOp("-")){ p++; return {k:"un",op:"-",a:unary()}; } if(isOp("+")){ p++; return unary(); } return pow(); }
+    function pow(){ const a=prim(); if(isOp("^")){ p++; return {k:"bin",op:"^",a,b:unary()}; } return a; }
+    function prim(){ const t=peek(); if(!t) fail();
+      if(t.t==="num"){ p++; return {k:"num",v:t.v}; }
+      if(t.t==="str"){ p++; return {k:"str",v:t.v}; }
+      if(t.t==="op"&&t.v==="("){ p++; const e=or(); if(!isOp(")")) throw new AlgoError(line,"Il manque une parenthèse fermante « ) ».","Chaque parenthèse ouverte doit être fermée."); p++; return e; }
+      if(t.t==="id"){
+        if(t.n==="vrai"){ p++; return {k:"bool",v:true}; }
+        if(t.n==="faux"){ p++; return {k:"bool",v:false}; }
+        if(RESERVED.has(t.n)) fail();
+        p++;
+        if(isOp("[")){ const idx=[];
+          while(isOp("[")){ p++; if(isOp("]")) throw new AlgoError(line,"Il manque l'indice entre les crochets de "+t.raw+"[ ].","Exemple : "+t.raw+"[1] ou "+t.raw+"[i]");
+            idx.push(or()); while(isOp(",")){ p++; idx.push(or()); }
+            if(!isOp("]")) throw new AlgoError(line,"Il manque le crochet fermant « ] » après "+t.raw+"[…","Exemple : "+t.raw+"[i]"); p++; }
+          return {k:"idx",name:t.raw,key:t.n,idx}; }
+        if(isOp("(")){ p++; const args=[]; if(!isOp(")")){ args.push(or()); while(isOp(",")){ p++; args.push(or()); } }
+          if(!isOp(")")) throw new AlgoError(line,"Il manque une parenthèse fermante « ) » après "+t.raw+"(…","Chaque parenthèse ouverte doit être fermée."); p++;
+          return {k:"call",fn:t.n,raw:t.raw,args}; }
+        return {k:"var",name:t.raw,key:t.n};
+      }
+      fail(); }
+    return {expr:or, pos:()=>p, setPos:v=>{p=v;}, peek, isOp, isId, next:()=>toks[p++], done:()=>p>=toks.length};
+  }
+  function fullExpr(toks,line){
+    if(!toks.length) throw new AlgoError(line,"Il manque une expression.","Écrivez une valeur, une variable ou un calcul.");
+    const P=exprParser(toks,line); const e=P.expr();
+    if(!P.done()) leftover(P.peek(),toks,P.pos(),line);
+    return e;
+  }
+  function leftover(t,toks,pos,line){
+    const prev=toks[pos-1], nx=toks[pos+1];
+    if(t.t==="op"&&t.v===","&&prev&&prev.t==="num"&&nx&&nx.t==="num")
+      throw new AlgoError(line,"La virgule ne peut pas servir dans un nombre.","Pour un nombre à virgule, utilisez le point : "+prev.raw+"."+nx.raw);
+    if(t.t==="op"&&t.v===")") throw new AlgoError(line,"Il y a une parenthèse fermante « ) » en trop.","Supprimez-la ou ajoutez la parenthèse ouvrante correspondante.");
+    throw new AlgoError(line,"« "+t.raw+" » n'est pas à sa place ici.","Il manque peut-être un opérateur (+, -, *, /, ET, OU…) ou une virgule avant ce mot.");
+  }
+  function argList(toks,line,what){
+    let ts=toks;
+    if(ts.length&&ts[0].t==="op"&&ts[0].v==="("){ let d=0,end=-1;
+      for(let i=0;i<ts.length;i++){ if(ts[i].t==="op"&&ts[i].v==="(")d++; if(ts[i].t==="op"&&ts[i].v===")"){ d--; if(d===0){ end=i; break; } } }
+      if(end===-1) throw new AlgoError(line,"Il manque la parenthèse fermante « ) » de "+what+".","Exemple : "+what+"(x)");
+      if(end===ts.length-1) ts=ts.slice(1,-1);
+    }
+    if(!ts.length) throw new AlgoError(line,what+" est vide.","Indiquez ce qu'il faut "+(what==="Lire"?"lire : Lire(x)":"afficher : Écrire(\"Bonjour\")"));
+    const P=exprParser(ts,line), out=[];
+    while(true){ out.push(P.expr()); if(P.done()) break;
+      if(P.isOp(",")){ P.next(); if(P.done()) throw new AlgoError(line,"Il y a une virgule en trop à la fin.","Supprimez la dernière virgule."); continue; }
+      leftover(P.peek(),ts,P.pos(),line); }
+    return out;
+  }
+
+  function matchBracket(ts,at){ let d=0; for(let i=at;i<ts.length;i++){ if(ts[i].t==="op"&&ts[i].v==="[")d++; if(ts[i].t==="op"&&ts[i].v==="]"){ d--; if(d===0) return i; } } return -1; }
+  function parseDims(ts,line){
+    const ex="Exemple : Tableau[1..10] de Entier, ou Tableau[1..3, 1..4] de Réel pour une matrice.";
+    if(!ts.length) throw new AlgoError(line,"La taille du tableau est vide.",ex);
+    const P=exprParser(ts,line), dims=[], raw=(a,b)=>ts.slice(a,b).map(t=>t.raw).join("");
+    while(true){ const s0=P.pos(); let lo={k:"num",v:1}, hi=P.expr(), label;
+      if(P.isOp("..")){ const s1=P.pos(); P.next(); lo=hi; hi=P.expr(); label=raw(s0,s1)+".."+raw(s1+1,P.pos()); }
+      else label="1.."+raw(s0,P.pos());
+      dims.push({lo,hi,label});
+      if(P.done()) break;
+      if(P.isOp(",")){ P.next(); continue; }
+      throw new AlgoError(line,"« "+P.peek().raw+" » n'est pas à sa place dans la taille du tableau.",ex); }
+    if(dims.length>2) throw new AlgoError(line,"Un tableau peut avoir au plus 2 dimensions.",ex);
+    return dims;
+  }
+
+  // ---------- Analyse du programme ----------
+  function compile(src){
+    const warnings=[]; const rows=[];
+    src.replace(/\r/g,"").split("\n").forEach((text,i)=>{ const toks=tokenize(text,i+1); while(toks.length&&toks[toks.length-1].v===";") toks.pop();
+      if(toks.some(t=>t.t==="op"&&t.v===";")&&!toks.some(t=>t.t==="op"&&t.v===":")) throw new AlgoError(i+1,"Il y a plusieurs instructions sur cette ligne.","Écrivez une seule instruction par ligne, sans point-virgule.");
+      if(toks.length){ const [head,rest]=headOf(toks); rows.push({line:i+1,toks,head,rest,text:text.trim()}); } });
+    if(!rows.length) throw new AlgoError(1,"L'algorithme est vide.","Écrivez votre algorithme ou choisissez un exemple dans la liste.");
+    let i=0; const prog={name:"",consts:[],vars:[],body:[],subs:[]}; const seen=new Map();
+    const SUBN=new Map(); rows.forEach(r=>{ if((r.head==="fonction"||r.head==="procedure")&&r.rest[0]&&r.rest[0].t==="id") SUBN.set(r.rest[0].n,{isFunc:r.head==="fonction",name:r.rest[0].raw}); });
+    const subs=new Map(); let cur=null;
+    // une procédure nommée comme un synonyme (Afficher, Saisir…) garde la priorité sur ce synonyme
+    rows.forEach(r=>{ const t=r.toks[0]; if(r.head&&t.t==="id"&&ALIAS[t.n]&&SUBN.has(t.n)){ r.head=null; r.rest=r.toks; } });
+    if(rows[0].head==="algorithme"){ prog.name=rows[0].rest.map(t=>t.raw).join(" "); i=1; }
+    if(!rows.some(r=>r.head==="debut")){
+      const guess=rows.find(r=>r.toks[0].t==="id"&&closest(r.toks[0].n,["debut"])&&r.toks.length===1);
+      throw new AlgoError(guess?guess.line:rows[Math.min(i,rows.length-1)].line,"Il manque le mot « Début ».",guess?"Vouliez-vous écrire « Début » à la place de « "+guess.toks[0].raw+" » ?":"Les instructions doivent être placées entre Début et Fin.");
+    }
+    function declare(tok,line,entry,sm){ sm=sm||seen;
+      if(RESERVED.has(tok.n)) throw new AlgoError(line,"« "+tok.raw+" » est un mot réservé du langage.","Choisissez un autre nom pour cette donnée.");
+      if(sm.has(tok.n)) throw new AlgoError(line,"« "+tok.raw+" » est déjà déclaré à la ligne "+sm.get(tok.n)+".","Deux données ne peuvent pas porter le même nom (les majuscules et les accents ne comptent pas).");
+      sm.set(tok.n,line); entry.name=tok.raw; entry.key=tok.n; entry.line=line; return entry;
+    }
+    function declVars(all,line,target,sm,isParam){ target=target||prog.vars;
+      const cut=all.findIndex(t=>t.t==="op"&&t.v===";");
+      if(cut!==-1){ declVars(all.slice(0,cut),line,target,sm,isParam); declVars(all.slice(cut+1),line,target,sm,isParam); return; }
+      const toks=all;
+      const ci=toks.findIndex(t=>t.t==="op"&&t.v===":");
+      if(ci===-1) throw new AlgoError(line,"Cette déclaration n'indique pas le type.","Écrivez le nom, deux-points, puis le type. Exemple : note : Réel");
+      let ty=toks.slice(ci+1), tdims=null, anyArr=false;
+      if(ty[0]&&ty[0].t==="id"&&ty[0].n==="tableau"){
+        const ex="Exemple : T : Tableau[1..10] de Entier";
+        if(isParam&&ty[1]&&ty[1].t==="id"&&ty[1].n==="de"){ anyArr=true; ty=ty.slice(2); if(!ty.length) throw new AlgoError(line,"Il manque le type des cases du tableau.","Exemple : T : Tableau de Entier"); }
+        else {
+        if(!(ty[1]&&ty[1].t==="op"&&ty[1].v==="[")) throw new AlgoError(line,"Il manque la taille du tableau entre crochets.",ex);
+        const close=matchBracket(ty,1); if(close===-1) throw new AlgoError(line,"Il manque le crochet fermant « ] » de la taille du tableau.",ex);
+        tdims=parseDims(ty.slice(2,close),line);
+        ty=ty.slice(close+1);
+        if(ty[0]&&ty[0].t==="id"&&ty[0].n==="de") ty=ty.slice(1);
+        else throw new AlgoError(line,"Il manque le mot « de » suivi du type des cases.",ex);
+        if(!ty.length) throw new AlgoError(line,"Il manque le type des cases du tableau.",ex);
+        }
+      }
+      const tn=ty[0]&&ty[0].t==="id"?TYPES[ty[0].n]:null;
+      if(!tn){ const s=ty[0]&&ty[0].t==="id"?closest(ty[0].n,Object.keys(TYPES).concat(["tableau"])):null;
+        throw new AlgoError(line,ty.length?"Le type « "+ty.map(t=>t.raw).join(" ")+" » n'existe pas.":"Il manque le type après les deux-points.",s?"Vouliez-vous écrire « "+(TYPES[s]||"Tableau")+" » ?":"Types possibles : Entier, Réel, Caractère, Chaîne, Booléen, ou Tableau[1..10] de Entier."); }
+      const extra=ty.slice(1);
+      if(extra.length&&!(tn==="Chaîne"&&extra.every(t=>t.t==="id"&&["de","caracteres","caractere"].includes(t.n)))) throw new AlgoError(line,"« "+extra.map(t=>t.raw).join(" ")+" » n'est pas à sa place après le type.","Écrivez une seule déclaration par ligne. Exemple : a, b : Entier");
+      const names=toks.slice(0,ci); if(!names.length) throw new AlgoError(line,"Il manque le nom de la variable avant les deux-points.","Exemple : note : Réel");
+      let k=0;
+      while(k<names.length){ const t=names[k];
+        if(t.t!=="id") throw new AlgoError(line,"« "+t.raw+" » n'est pas un nom de variable valide.","Un nom commence par une lettre et ne contient ni espace ni symbole.");
+        k++; let dims=tdims;
+        if(names[k]&&names[k].t==="op"&&names[k].v==="["){ const close=matchBracket(names,k);
+          if(close===-1) throw new AlgoError(line,"Il manque le crochet fermant « ] » après "+t.raw+"[…","Exemple : "+t.raw+"[1..10] : Entier");
+          if(tdims) throw new AlgoError(line,"La taille de « "+t.raw+" » est donnée deux fois.","Écrivez soit "+t.raw+" : Tableau[1..10] de "+tn+", soit "+t.raw+"[1..10] : "+tn+".");
+          dims=parseDims(names.slice(k+1,close),line); k=close+1; }
+        target.push(declare(t,line,dims?{type:"Tableau["+dims.map(d=>d.label).join(", ")+"] de "+tn,elem:tn,dims,arr:true}:anyArr?{type:"Tableau de "+tn,elem:tn,dims:null,arr:true}:{type:tn},sm));
+        if(k>=names.length) break;
+        if(!(names[k].t==="op"&&names[k].v===",")) throw new AlgoError(line,"Les noms de variables doivent être séparés par des virgules.","Exemple : a, b : Entier (un nom ne contient pas d'espace).");
+        k++; if(k>=names.length) throw new AlgoError(line,"Il y a une virgule en trop avant les deux-points.","Exemple : a, b : Entier");
+      }
+    }
+    function declConst(toks,line){
+      const t=toks[0], o=toks[1];
+      if(!t||t.t!=="id"||!o||o.t!=="op"||(o.v!=="="&&o.v!=="ASSIGN")) throw new AlgoError(line,"Cette constante est mal déclarée.","Écrivez le nom, le signe =, puis la valeur. Exemple : PI = 3.14");
+      prog.consts.push(declare(t,line,{e:fullExpr(toks.slice(2),line)}));
+    }
+    const CLOSERS=new Set(["finsi","sinon","finpour","fintantque","jusqua","fin","cas","finselon","finfonction","finprocedure"]);
+    function parseParams(ts,line,sub){
+      // découpe en groupes : « a, b : Entier ; Var c : Réel » ou « a : Entier, b : Entier »
+      const groups=[]; let g=[], depth=0, hasColon=false;
+      ts.forEach(t=>{ if(t.t==="op"&&t.v==="[") depth++; if(t.t==="op"&&t.v==="]") depth--;
+        if(depth===0&&t.t==="op"&&(t.v===";"||(t.v===","&&hasColon))){ groups.push(g); g=[]; hasColon=false; return; }
+        if(depth===0&&t.t==="op"&&t.v===":") hasColon=true; g.push(t); });
+      if(g.length) groups.push(g);
+      for(let gr of groups){
+        if(!gr.length) throw new AlgoError(line,"Il y a un séparateur en trop dans la liste des paramètres.","Exemple : (a : Entier, b : Entier)");
+        let ref=false; const t0=gr[0], t1=gr[1], t2=gr[2];
+        if(t0.t==="id"&&["var","es","ref","inout"].includes(t0.n)&&t1&&t1.t==="id"){ ref=true; gr=gr.slice(1); }
+        else if(t0.t==="id"&&t0.n==="e"&&t1&&t1.t==="op"&&t1.v==="/"&&t2&&t2.t==="id"&&t2.n==="s"){ ref=true; gr=gr.slice(3); }
+        else if(t0.t==="id"&&(t0.n==="s"||t0.n==="e")&&t1&&t1.t==="id"){ ref=t0.n==="s"; gr=gr.slice(1); }
+        if(!gr.some(t=>t.t==="op"&&t.v===":")) throw new AlgoError(line,"Le type du paramètre « "+gr.map(t=>t.raw).join(" ")+" » n'est pas indiqué.","Exemple : (a : Entier, b : Réel)");
+        const n0=sub.params.length; declVars(gr,line,sub.params,sub.seen,true);
+        for(let k=n0;k<sub.params.length;k++) sub.params[k].ref=ref;
+      }
+    }
+    function parseSub(r){
+      const isFunc=r.head==="fonction", what=isFunc?"Fonction":"Procédure", la=isFunc?"la fonction":"la procédure", line=r.line, ts=r.rest;
+      const ex=isFunc?"Exemple : Fonction Somme(a : Entier, b : Entier) : Entier":"Exemple : Procédure Saluer(nom : Chaîne)";
+      const nt=ts[0];
+      if(!nt||nt.t!=="id") throw new AlgoError(line,"Il manque le nom de "+la+".",ex);
+      if(RESERVED.has(nt.n)&&!ALIAS[nt.n]) throw new AlgoError(line,"« "+nt.raw+" » est un mot réservé : choisissez un autre nom pour "+la+".",ex);
+      if(subs.has(nt.n)) throw new AlgoError(line,"« "+nt.raw+" » est déjà défini à la ligne "+subs.get(nt.n).line+".","Deux fonctions ou procédures ne peuvent pas porter le même nom.");
+      const sub={isFunc,name:nt.raw,key:nt.n,line,params:[],vars:[],seen:new Map(),sig:r.text};
+      let k=1;
+      if(ts[k]&&ts[k].t==="op"&&ts[k].v==="("){ let d=0, close=-1;
+        for(let j=k;j<ts.length;j++){ if(ts[j].t==="op"&&ts[j].v==="(") d++; if(ts[j].t==="op"&&ts[j].v===")"){ d--; if(d===0){ close=j; break; } } }
+        if(close===-1) throw new AlgoError(line,"Il manque la parenthèse fermante « ) » après les paramètres.",ex);
+        parseParams(ts.slice(k+1,close),line,sub); k=close+1; }
+      const colon=ts[k]&&ts[k].t==="op"&&ts[k].v===":";
+      if(isFunc){
+        if(!colon) throw new AlgoError(line,ts[k]?"« "+ts[k].raw+" » n'est pas à sa place ici.":"Il manque le type de la valeur retournée par la fonction.","Écrivez le type à la fin de la ligne. "+ex);
+        const ty=ts.slice(k+1), tn=ty.length===1&&ty[0].t==="id"?TYPES[ty[0].n]:null;
+        if(!tn) throw new AlgoError(line,ty.length?"Le type retourné « "+ty.map(t=>t.raw).join(" ")+" » n'est pas accepté.":"Il manque le type après les deux-points.","Une fonction retourne un Entier, un Réel, un Caractère, une Chaîne ou un Booléen.");
+        sub.rtype=tn;
+      } else if(ts[k]) throw new AlgoError(line,colon?"Une procédure ne retourne pas de valeur : elle n'a pas de type.":"« "+ts[k].raw+" » n'est pas à sa place ici.",colon?"Supprimez « "+ts.slice(k).map(t=>t.raw).join(" ")+" », ou écrivez une Fonction si vous voulez retourner une valeur.":ex);
+      i++;
+      let md=false;
+      while(true){
+        if(i>=rows.length) throw new AlgoError(line,what+" « "+sub.name+" » n'a pas de Début.","Structure : "+what+" … puis Variables (si besoin), Début, les instructions et Fin"+what+".");
+        const q=rows[i];
+        if(q.head==="debut"){ if(q.rest.length) throw new AlgoError(q.line,"Le mot Début doit être seul sur sa ligne.","Passez à la ligne après Début."); i++; break; }
+        if(q.head==="variables"){ md=true; i++; if(q.rest.length) declVars(q.rest,q.line,sub.vars,sub.seen); continue; }
+        if(q.head==="constantes") throw new AlgoError(q.line,"Les constantes se déclarent dans l'algorithme principal.","Déplacez-les au début de l'algorithme : elles seront utilisables partout.");
+        if(!q.head&&md){ declVars(q.toks,q.line,sub.vars,sub.seen); i++; continue; }
+        throw new AlgoError(q.line,"Il manque « Début » avant les instructions de "+la+" « "+sub.name+" ».","Structure : "+what+" … puis Variables (si besoin), Début, les instructions et Fin"+what+".");
+      }
+      sub.debutLine=rows[i-1].line;
+      cur=sub;
+      const b=block(["finfonction","finprocedure","fin"],{line,label:what+" "+sub.name,close:"Fin"+what});
+      cur=null;
+      sub.body=b.list; sub.endLine=b.end.line;
+      subs.set(sub.key,sub); prog.subs.push(sub);
+    }
+    let mode=null;
+    for(;i<rows.length;i++){ const r=rows[i];
+      if(r.head==="fonction"||r.head==="procedure"){ parseSub(r); i--; continue; }
+      if(r.head==="debut"){ if(r.rest.length) throw new AlgoError(r.line,"Le mot Début doit être seul sur sa ligne.","Passez à la ligne après Début."); break; }
+      if(r.head==="variables"||r.head==="constantes"){ mode=r.head; if(mode==="variables") prog.varsLine=r.line; if(r.rest.length) (mode==="variables"?declVars:declConst)(r.rest,r.line); continue; }
+      if(r.head==="algorithme") throw new AlgoError(r.line,"Le mot Algorithme doit figurer une seule fois, sur la première ligne.","Supprimez cette ligne.");
+      if(!mode||r.head) throw new AlgoError(r.line,"Cette ligne est placée avant Début.","Les instructions s'écrivent entre Début et Fin ; les déclarations s'écrivent après le mot Variables ou Constantes.");
+      (mode==="variables"?declVars:declConst)(r.toks,r.line);
+    }
+    if(i>=rows.length) throw new AlgoError(rows[rows.length-1].line,"Il manque le Début de l'algorithme principal.","Après les fonctions et procédures, écrivez Début, les instructions, puis Fin.");
+    const debutLine=rows[i].line; i++; prog.debutLine=debutLine;
+    
+
+    function block(expect,opener){
+      const list=[];
+      while(true){
+        if(i>=rows.length) throw new AlgoError(opener.line,"« "+opener.label+" » (ligne "+opener.line+") n'est jamais fermé.","Ajoutez « "+opener.close+" » à la fin de ce bloc.");
+        const r=rows[i];
+        if(r.head&&CLOSERS.has(r.head)){
+          if(expect.includes(r.head)){ i++; return {list,end:r}; }
+          if(opener.label==="Début") throw new AlgoError(r.line,"« "+NICE[r.head]+" » ne correspond à aucun bloc ouvert.","Supprimez cette ligne, ou vérifiez qu'il ne manque pas un Si, un Pour ou un Tant que plus haut.");
+          throw new AlgoError(r.line,"Le bloc « "+opener.label+" » ouvert à la ligne "+opener.line+" n'est pas fermé.","Ajoutez « "+opener.close+" » avant cette ligne (« "+NICE[r.head]+" » arrive trop tôt).");
+        }
+        i++; list.push(stmt(r));
+      }
+    }
+    function need(P,word,line,after){
+      if(!P.isId(word)){ const t=P.peek(); const near=t&&t.t==="id"&&closest(t.n,[word]);
+        throw new AlgoError(line,"Il manque le mot « "+NICE[word]+" »"+(after?" "+after:"")+".",near?"Vouliez-vous écrire « "+NICE[word]+" » à la place de « "+t.raw+" » ?":(t?"« "+t.raw+" » n'est pas à sa place : vérifiez l'expression écrite avant.":"Ajoutez « "+NICE[word]+" » à la fin de la ligne.")); }
+      P.next();
+      if(!P.done()) throw new AlgoError(line,"Après « "+NICE[word]+" », il faut passer à la ligne.","Écrivez chaque instruction sur sa propre ligne.");
+    }
+    function parseIf(toks,line){
+      if(!toks.length) throw new AlgoError(line,"Il manque la condition après Si.","Exemple : Si note >= 10 Alors");
+      const P=exprParser(toks,line); const c=P.expr(); need(P,"alors",line,"après la condition");
+      const node={k:"if",line,c,then:null,else:null};
+      const b=block(["sinon","finsi"],{line,label:"Si",close:"FinSi"}); node.then=b.list; node.endLine=b.end.line;
+      if(b.end.head==="sinon"){
+        const rest=b.end.rest;
+        if(rest.length&&rest[0].t==="id"&&rest[0].n==="si") { node.elseLine=b.end.line; node.elseIf=true; node.else=[parseIf(rest.slice(1),b.end.line)]; node.endLine=node.else[0].endLine; }
+        else { if(rest.length) throw new AlgoError(b.end.line,"Le mot Sinon doit être seul sur sa ligne.","Passez à la ligne après Sinon.");
+          node.elseLine=b.end.line; const b2=block(["finsi"],{line,label:"Si",close:"FinSi"}); node.else=b2.list; node.endLine=b2.end.line; }
+      }
+      return node;
+    }
+    function caseValues(ts,line){
+      if(!ts.length) throw new AlgoError(line,"Il manque la valeur du cas avant les deux-points.","Exemple : Cas 1 :   ou   Cas 2, 3 :   ou   Cas 10..20 :");
+      const P=exprParser(ts,line), vals=[];
+      while(true){ const a=P.expr();
+        if(P.isOp("..")){ P.next(); vals.push({lo:a,hi:P.expr()}); } else vals.push({v:a});
+        if(P.done()) break;
+        if(P.isOp(",")){ P.next(); if(P.done()) throw new AlgoError(line,"Il y a une virgule en trop avant les deux-points.","Exemple : Cas 2, 3 :"); continue; }
+        leftover(P.peek(),ts,P.pos(),line); }
+      return vals;
+    }
+    function parseSwitch(toks,line){
+      if(!toks.length) throw new AlgoError(line,"Il manque la valeur à tester après Selon.","Exemple : Selon choix Faire");
+      const P=exprParser(toks,line); const e=P.expr();
+      if(P.isId("faire")) P.next();
+      if(!P.done()) leftover(P.peek(),toks,P.pos(),line);
+      const node={k:"switch",line,e,cases:[],def:null}; let cur=null;
+      const colon=t=>t.t==="op"&&t.v===":";
+      while(true){
+        if(i>=rows.length) throw new AlgoError(line,"« Selon » (ligne "+line+") n'est jamais fermé.","Ajoutez « FinSelon » à la fin de ce bloc.");
+        const r=rows[i];
+        if(r.head==="finselon"){ i++; node.endLine=r.line;
+          if(r.rest.length) throw new AlgoError(r.line,"Le mot FinSelon doit être seul sur sa ligne.","Passez à la ligne après FinSelon.");
+          break; }
+        const isDef=r.head==="sinon"||(r.head==="cas"&&r.rest[0]&&r.rest[0].t==="id"&&["sinon","autre","autres","autrement"].includes(r.rest[0].n));
+        if(isDef||r.head==="cas"||(!r.head&&r.toks.findIndex(colon)>0)){
+          if(node.def) throw new AlgoError(r.line,"Le cas « Sinon » doit être le dernier du Selon.","Placez les autres cas avant Sinon.");
+          let after;
+          if(isDef){ after=r.head==="cas"?r.rest.slice(1):r.rest;
+            if(after[0]&&after[0].t==="id"&&after[0].n==="cas") after=after.slice(1);
+            if(after[0]&&colon(after[0])) after=after.slice(1);
+            cur=node.def={line:r.line,body:[]}; }
+          else { const ts=r.head==="cas"?r.rest:r.toks, k=ts.findIndex(colon);
+            if(k===-1) throw new AlgoError(r.line,"Il manque les deux-points « : » après la valeur du cas.","Exemple : Cas 1 :");
+            cur={line:r.line,vals:caseValues(ts.slice(0,k),r.line),body:[]}; node.cases.push(cur); after=ts.slice(k+1); }
+          i++;
+          if(after.length){ const [h,rest]=headOf(after); const st=stmt({line:r.line,toks:after,head:h,rest,text:""}); st.inl=true; cur.body.push(st); }
+          continue;
+        }
+        if(r.head==="fin"||r.head==="finsi"||r.head==="finpour"||r.head==="fintantque"||r.head==="jusqua") throw new AlgoError(r.line,"Le bloc « Selon » ouvert à la ligne "+line+" n'est pas fermé.","Ajoutez « FinSelon » avant cette ligne (« "+NICE[r.head]+" » arrive trop tôt).");
+        if(r.head&&CLOSERS.has(r.head)) throw new AlgoError(r.line,"« "+NICE[r.head]+" » ne correspond à aucun bloc ouvert dans ce Selon.","Le Selon commencé à la ligne "+line+" doit se terminer par FinSelon.");
+        if(!cur) throw new AlgoError(r.line,"Cette instruction doit être placée sous un cas du Selon.","Commencez par une ligne comme : Cas 1 :");
+        i++; cur.body.push(stmt(r));
+      }
+      if(!node.cases.length) throw new AlgoError(line,"Ce Selon ne contient aucun cas.","Exemple : Cas 1 : Écrire(\"un\")");
+      return node;
+    }
+    function callStmt(toks,line,explicit){
+      const t0=toks[0];
+      if(!t0||t0.t!=="id") throw new AlgoError(line,"Il manque le nom de la procédure à appeler.","Exemple : Appeler Saluer(x)");
+      const info=SUBN.get(t0.n);
+      if(!info){ const sg=closest(t0.n,[...SUBN.keys()]);
+        throw new AlgoError(line,"La procédure « "+t0.raw+" » n'existe pas.",sg?"Vouliez-vous écrire « "+SUBN.get(sg).name+" » ?":"Définissez-la avant le Début de l'algorithme : Procédure "+t0.raw+"(…) … FinProcédure"); }
+      if(info.isFunc) throw new AlgoError(line,"« "+t0.raw+" » est une fonction : il faut utiliser la valeur qu'elle retourne.","Exemple : x ← "+t0.raw+"(…)   ou   Écrire("+t0.raw+"(…))");
+      let e;
+      if(toks.length===1) e={k:"call",fn:t0.n,raw:t0.raw,args:[]};
+      else { e=fullExpr(toks,line); if(e.k!=="call") throw new AlgoError(line,"Cette ligne n'est pas une instruction.","Pour appeler la procédure : "+t0.raw+"(…)"); }
+      return {k:"pcall",line,call:e};
+    }
+    function stmt(r){
+      const line=r.line, rest=r.rest;
+      switch(r.head){
+        case "selon": return parseSwitch(rest,line);
+        case "ecrire": return {k:"write",line,args:argList(rest,line,"Écrire")};
+        case "lire": { const args=argList(rest,line,"Lire");
+          args.forEach(a=>{ if(a.k!=="var"&&a.k!=="idx") throw new AlgoError(line,"Lire attend un nom de variable.","Exemple : Lire(note). Pour afficher un message, utilisez Écrire avant Lire."); });
+          return {k:"read",line,targets:args}; }
+        case "si": return parseIf(rest,line);
+        case "pour": { const v=rest[0];
+          if(!v||v.t!=="id"||RESERVED.has(v.n)) throw new AlgoError(line,"Il manque le compteur après Pour.","Exemple : Pour i de 1 à 10 Faire");
+          let ts=rest.slice(1); if(ts[0]&&ts[0].t==="id"&&ts[0].n==="allant") ts=ts.slice(1);
+          if(ts[0]&&((ts[0].t==="id"&&ts[0].n==="de")||(ts[0].t==="op"&&(ts[0].v==="ASSIGN"||ts[0].v==="=")))) ts=ts.slice(1);
+          else throw new AlgoError(line,"Il manque le mot « de » après le compteur.","Exemple : Pour "+v.raw+" de 1 à 10 Faire");
+          const P=exprParser(ts,line); const a=P.expr();
+          if(!(P.isId("a")||P.isId("jusqua"))) throw new AlgoError(line,"Il manque le mot « à » entre la valeur de départ et la valeur d'arrivée.","Exemple : Pour "+v.raw+" de 1 à 10 Faire");
+          P.next(); const b=P.expr(); let st=null;
+          if(P.isId("pas")){ P.next(); if(P.isId("de")) P.next(); st=P.expr(); }
+          need(P,"faire",line,"à la fin de la ligne Pour");
+          const bl=block(["finpour"],{line,label:"Pour",close:"FinPour"});
+          return {k:"for",line,v:{name:v.raw,key:v.n},a,b,st,body:bl.list,endLine:bl.end.line}; }
+        case "tantque": { if(!rest.length) throw new AlgoError(line,"Il manque la condition après Tant que.","Exemple : Tant que x < 10 Faire");
+          const P=exprParser(rest,line); const c=P.expr(); need(P,"faire",line,"après la condition");
+          const bl=block(["fintantque"],{line,label:"Tant que",close:"FinTantQue"});
+          return {k:"while",line,c,body:bl.list,endLine:bl.end.line}; }
+        case "repeter": { if(rest.length) throw new AlgoError(line,"Le mot Répéter doit être seul sur sa ligne.","Passez à la ligne après Répéter.");
+          const b=block(["jusqua"],{line,label:"Répéter",close:"Jusqu'à"});
+          return {k:"repeat",line,body:b.list,c:fullExpr(b.end.rest,b.end.line),untilLine:b.end.line,endLine:b.end.line}; }
+        case "retourner": {
+          if(!cur) throw new AlgoError(line,"« Retourner » s'utilise seulement à l'intérieur d'une fonction.","Dans l'algorithme principal, utilisez Écrire pour afficher un résultat.");
+          if(cur.isFunc){ if(!rest.length) throw new AlgoError(line,"Il manque la valeur que la fonction doit retourner.","Exemple : Retourner résultat");
+            return {k:"return",line,e:fullExpr(rest,line)}; }
+          if(rest.length) throw new AlgoError(line,"Une procédure ne retourne pas de valeur.","Supprimez la valeur après Retourner (Retourner seul quitte la procédure), ou transformez-la en Fonction.");
+          return {k:"return",line,e:null}; }
+        case "appeler": return callStmt(rest,line,true);
+        case "fonction": case "procedure": throw new AlgoError(line,"Une "+(r.head==="fonction"?"fonction":"procédure")+" ne peut pas être définie à l'intérieur d'un bloc.","Placez-la avant le Début de l'algorithme principal, ou après sa Fin.");
+        case "debut": throw new AlgoError(line,"Le mot Début figure deux fois.","Gardez un seul Début"+(prog.debutLine?" (ligne "+prog.debutLine+")":"")+".");
+        case "variables": case "constantes": throw new AlgoError(line,"Les déclarations doivent être placées avant Début.","Déplacez cette ligne au-dessus de Début.");
+        case "algorithme": throw new AlgoError(line,"Le mot Algorithme doit figurer sur la première ligne seulement.","Supprimez cette ligne.");
+      }
+      const t0=r.toks[0], t1=r.toks[1];
+      if(t0.t==="id"&&SUBN.has(t0.n)&&(!t1||(t1.t==="op"&&t1.v==="("))) return callStmt(r.toks,line,false);
+      if(t0.t==="id"&&t1&&t1.t==="op"&&t1.v==="("&&!RESERVED.has(t0.n)&&!FUNCS[t0.n]){
+        const sg=closest(t0.n,[...SUBN.keys()]);
+        throw new AlgoError(line,"La procédure « "+t0.raw+" » n'existe pas.",sg?"Vouliez-vous écrire « "+SUBN.get(sg).name+" » ?":"Définissez-la avant le Début de l'algorithme : Procédure "+t0.raw+"(…) … FinProcédure");
+      }
+      if(t0.t==="id"&&t1&&t1.t==="op"&&t1.v==="["&&!RESERVED.has(t0.n)){
+        let k=1; while(r.toks[k]&&r.toks[k].t==="op"&&r.toks[k].v==="["){ const c=matchBracket(r.toks,k); if(c===-1) throw new AlgoError(line,"Il manque le crochet fermant « ] » après "+t0.raw+"[…","Exemple : "+t0.raw+"[i] ← 0"); k=c+1; }
+        const tk=r.toks[k];
+        if(tk&&tk.t==="op"&&(tk.v==="ASSIGN"||tk.v==="=")){
+          if(tk.v==="=") warnings.push({line,msg:"Ligne "+line+" : « = » a été accepté comme une affectation. La notation correcte est « "+t0.raw+"[…] ← … »."});
+          const tg=fullExpr(r.toks.slice(0,k),line);
+          return {k:"assign",line,target:tg,e:fullExpr(r.toks.slice(k+1),line)};
+        }
+        throw new AlgoError(line,"Cette ligne n'est pas une instruction.","Pour remplir une case : "+t0.raw+"[1] ← valeur. Pour l'afficher : Écrire("+t0.raw+"[1]).");
+      }
+      if(t0.t==="id"&&t1&&t1.t==="op"&&(t1.v==="ASSIGN"||t1.v==="=")){
+        if(RESERVED.has(t0.n)) throw new AlgoError(line,"« "+t0.raw+" » est un mot réservé : ce n'est pas une variable.","Choisissez un autre nom de variable.");
+        if(cur&&cur.isFunc&&t0.n===cur.key&&!cur.seen.has(t0.n)) throw new AlgoError(line,"Pour donner le résultat de la fonction, écrivez « Retourner … ».","Exemple : Retourner "+r.toks.slice(2).map(t=>t.raw).join(" "));
+        if(t1.v==="=") warnings.push({line,msg:"Ligne "+line+" : « = » a été accepté comme une affectation. La notation correcte est « "+t0.raw+" ← … »."});
+        return {k:"assign",line,target:{name:t0.raw,key:t0.n},e:fullExpr(r.toks.slice(2),line)};
+      }
+      if(t0.t==="id"){
+        if(t0.n==="alors"||t0.n==="faire") throw new AlgoError(line,"« "+t0.raw+" » doit être écrit à la fin de la ligne précédente.","Exemple : Si x > 0 Alors   ou   Pour i de 1 à 5 Faire");
+        const s=closest(t0.n.replace(/_/g,""),["ecrire","lire","si","sinon","finsi","pour","finpour","tantque","fintantque","fin","repeter","selon","finselon","retourner","fonction","procedure"]);
+        if(s) throw new AlgoError(line,"L'instruction « "+t0.raw+" » n'existe pas.","Vouliez-vous écrire « "+NICE[s]+" » ?");
+        if(r.toks.length===1||(t1&&t1.t==="id")) throw new AlgoError(line,"Cette ligne n'est pas une instruction.","Pour donner une valeur : "+t0.raw+" ← valeur. Pour afficher : Écrire("+t0.raw+").");
+      }
+      throw new AlgoError(line,"Cette ligne n'est pas une instruction reconnue.","Instructions possibles : affectation (x ← 5), Lire, Écrire, Si, Selon, Pour, Tant que.");
+    }
+    const main=block(["fin"],{line:debutLine,label:"Début",close:"Fin"});
+    prog.body=main.list; prog.finLine=main.end.line;
+    if(main.end.rest.length) throw new AlgoError(main.end.line,"« Fin "+main.end.rest.map(t=>t.raw).join(" ")+" » n'est pas reconnu.","Écrivez FinSi, FinPour ou FinTantQue pour fermer un bloc, ou Fin seul pour terminer l'algorithme.");
+    while(i<rows.length&&(rows[i].head==="fonction"||rows[i].head==="procedure")) parseSub(rows[i]);
+    if(i<rows.length) warnings.push({line:rows[i].line,msg:"Ligne "+rows[i].line+" : ce qui est écrit après Fin est ignoré."});
+    for(const sb of prog.subs) if(seen.has(sb.key)) throw new AlgoError(sb.line,"« "+sb.name+" » est à la fois le nom d'une variable (ligne "+seen.get(sb.key)+") et d'une "+(sb.isFunc?"fonction":"procédure")+".","Donnez-leur deux noms différents.");
+    return {program:prog,warnings};
+  }
+
+  // ---------- Exécution ----------
+  const clean = x => Number.isInteger(x)||!isFinite(x) ? x : parseFloat(x.toPrecision(12));
+  function fmt(v){ if(v===true) return "Vrai"; if(v===false) return "Faux"; if(typeof v==="number") return String(clean(v)); return String(v); }
+  const kind = v => typeof v==="number"?"un nombre":typeof v==="string"?"un texte":"un booléen (Vrai/Faux)";
+  const look=(rt,key)=>(rt.frame&&rt.frame.vars.get(key))||rt.env.get(key);
+  function names(rt){ return [...rt.env.values()].concat(rt.frame?[...rt.frame.vars.values()]:[]).map(v=>v.key); }
+  function getVar(rt,ref,line){
+    const v=look(rt,ref.key);
+    if(!v&&rt.subs&&rt.subs.has(ref.key)){ const sb=rt.subs.get(ref.key); throw new AlgoError(line,"« "+ref.name+" » est une "+(sb.isFunc?"fonction":"procédure")+", pas une variable.",sb.isFunc?"Pour l'utiliser, ajoutez les parenthèses : "+ref.name+"(…)":"Appelez-la seule sur sa ligne : "+ref.name+"(…)"); }
+    if(!v){ const s=closest(ref.key,names(rt));
+      throw new AlgoError(line,"« "+ref.name+" » n'est pas déclaré.",s?"Vouliez-vous écrire « "+look(rt,s).name+" » ? Sinon, ajoutez « "+ref.name+" » dans la partie Variables.":"Ajoutez-le dans la partie Variables (exemple : "+ref.name+" : Entier). Si c'est un texte à afficher, mettez-le entre guillemets."); }
+    return v;
+  }
+  function checkType(name,type,val,line){
+    const bad=(exp,hint)=>{ throw new AlgoError(line,"« "+name+" » est de type "+type+" : elle ne peut pas recevoir "+exp+".",hint); };
+    switch(type){
+      case "Entier": if(typeof val!=="number") bad(kind(val)+" ("+fmt(val)+")","Changez le type de « "+name+" » ou la valeur donnée.");
+        if(!Number.isInteger(val)) bad("le nombre à virgule "+fmt(val),"Déclarez « "+name+" » en Réel, ou utilisez div pour une division entière."); break;
+      case "Réel": if(typeof val!=="number") bad(kind(val)+" ("+fmt(val)+")","Un Réel reçoit seulement un nombre."); break;
+      case "Chaîne": if(typeof val!=="string") bad(kind(val)+" ("+fmt(val)+")","Un texte s'écrit entre guillemets : \""+fmt(val)+"\"."); break;
+      case "Caractère": if(typeof val!=="string") bad(kind(val)+" ("+fmt(val)+")","Un caractère s'écrit entre apostrophes : 'A'.");
+        if(val.length!==1) bad("un texte de "+val.length+" caractères","Un Caractère contient un seul symbole. Pour un mot, déclarez « "+name+" » en Chaîne."); break;
+      case "Booléen": if(typeof val!=="boolean") bad(kind(val)+" ("+fmt(val)+")","Un Booléen reçoit Vrai, Faux ou une condition comme x > 0."); break;
+    }
+  }
+  const arrErr=(v,line)=>new AlgoError(line,"« "+v.name+" » est un tableau : il faut préciser la case voulue.","Exemple : "+v.name+"["+v.dims.map(d=>d.lo).join(", ")+"]. Pour parcourir tout le tableau, utilisez une boucle Pour.");
+  function cell(rt,ref,line){
+    const v=getVar(rt,ref,line);
+    if(!v.isArr) throw new AlgoError(line,"« "+v.name+" » n'est pas un tableau : on ne peut pas utiliser de crochets [ ].","Pour utiliser la variable, écrivez simplement "+v.name+". Pour un tableau, déclarez-le ainsi : "+v.name+" : Tableau[1..10] de "+v.type);
+    if(ref.idx.length!==v.dims.length) throw new AlgoError(line,"« "+v.name+" » a "+v.dims.length+" dimension"+(v.dims.length>1?"s":"")+" : il faut "+v.dims.length+" indice"+(v.dims.length>1?"s":"")+" entre les crochets.",v.dims.length===2?"Exemple : "+v.name+"[i, j]":"Exemple : "+v.name+"[i]");
+    let off=0; const ix=[];
+    ref.idx.forEach((e,d)=>{ const x=ev(e,rt,line), D=v.dims[d];
+      if(typeof x!=="number"||!Number.isInteger(x)) throw new AlgoError(line,"L'indice d'un tableau doit être un nombre entier, pas "+(typeof x==="number"?fmt(x):kind(x))+".","Exemple : "+v.name+"[i] avec i de type Entier.");
+      if(x<D.lo||x>D.hi) throw new AlgoError(line,"L'indice "+x+" sort du tableau « "+v.name+" » (les cases vont de "+D.lo+" à "+D.hi+").","Vérifiez les bornes de la boucle : un tableau déclaré ["+D.lo+".."+D.hi+"] n'a pas de case "+x+".");
+      off=off*(D.hi-D.lo+1)+(x-D.lo); ix.push(x); });
+    return {v,off,label:v.name+"["+ix.join(", ")+"]"};
+  }
+  function setCell(rt,c,val,line){ checkType(c.label,c.v.elem,val,line); c.v.value[c.off]=val; rt.changed(line); }
+  function setVar(rt,ref,val,line){
+    if(ref.idx) return setCell(rt,cell(rt,ref,line),val,line);
+    const v=getVar(rt,ref,line);
+    if(v.isConst) throw new AlgoError(line,"« "+v.name+" » est une constante : sa valeur ne peut pas changer.","Utilisez une variable si la valeur doit être modifiée.");
+    if(v.isArr) throw arrErr(v,line);
+    checkType(v.name,v.type,val,line);
+    v.value=val; rt.changed(line);
+  }
+  function ev(e,rt,line){
+    switch(e.k){
+      case "num": case "str": case "bool": return e.v;
+      case "idx": { const c=cell(rt,e,line), x=c.v.value[c.off];
+        if(x===undefined) throw new AlgoError(line,"La case "+c.label+" n'a pas encore de valeur.","Remplissez-la avant de l'utiliser, avec "+c.label+" ← … ou Lire("+c.label+").");
+        return x; }
+      case "var": { const v=getVar(rt,e,line);
+        if(v.isArr) throw arrErr(v,line);
+        if(v.value===undefined) throw new AlgoError(line,"« "+v.name+" » n'a pas encore de valeur.","Donnez-lui une valeur avant de l'utiliser, avec "+v.name+" ← … ou Lire("+v.name+").");
+        return v.value; }
+      case "un": { const a=ev(e.a,rt,line);
+        if(e.op==="-"){ if(typeof a!=="number") throw new AlgoError(line,"Le signe - s'applique à un nombre, pas à "+kind(a)+".",""); return -a; }
+        if(typeof a!=="boolean") throw new AlgoError(line,"NON s'applique à une condition, pas à "+kind(a)+".","Exemple : NON (x > 5)"); return !a; }
+      case "call": return call(e,rt,line);
+      case "bin": { const a=ev(e.a,rt,line), b=ev(e.b,rt,line), op=e.op;
+        if(op==="et"||op==="ou"){ if(typeof a!=="boolean"||typeof b!=="boolean") throw new AlgoError(line,op.toUpperCase()+" relie deux conditions, pas "+kind(typeof a!=="boolean"?a:b)+".","Exemple : (x > 0) "+op.toUpperCase()+" (x < 10)"); return op==="et"?(a&&b):(a||b); }
+        if(["=","<>","<",">","<=",">="].includes(op)){
+          if(typeof a!==typeof b) throw new AlgoError(line,"On ne peut pas comparer "+kind(a)+" avec "+kind(b)+".",typeof a==="number"||typeof b==="number"?"Un nombre s'écrit sans guillemets : 10 et non \"10\".":"");
+          if(typeof a==="boolean"&&op!=="="&&op!=="<>") throw new AlgoError(line,"Deux booléens se comparent seulement avec = ou ≠.","");
+          const x=typeof a==="number"?clean(a):a, y=typeof b==="number"?clean(b):b;
+          return op==="="?x===y:op==="<>"?x!==y:op==="<"?x<y:op===">"?x>y:op==="<="?x<=y:x>=y; }
+        if(op==="+"&&(typeof a==="string"||typeof b==="string")) return fmt(a)+fmt(b);
+        if(typeof a!=="number"||typeof b!=="number"){ const w=typeof a!=="number"?a:b;
+          throw new AlgoError(line,"L'opération « "+op+" » demande deux nombres, mais elle reçoit "+kind(w)+" ("+fmt(w)+").",typeof w==="string"?"Un nombre s'écrit sans guillemets. Vérifiez aussi le type des variables utilisées.":"Utilisez ET, OU, NON avec les conditions."); }
+        if(op==="+") return clean(a+b); if(op==="-") return clean(a-b); if(op==="*") return clean(a*b);
+        if(op==="^") return clean(Math.pow(a,b));
+        if(b===0) throw new AlgoError(line,"Division par zéro.","Le diviseur vaut 0 à cet instant. Vérifiez sa valeur avec un Si avant de diviser.");
+        if(op==="/") return clean(a/b);
+        if(!Number.isInteger(a)||!Number.isInteger(b)) throw new AlgoError(line,"« "+op+" » s'utilise seulement avec des entiers (ici : "+fmt(a)+" "+op+" "+fmt(b)+").","Utilisez / pour diviser des nombres à virgule.");
+        return op==="div"?Math.trunc(a/b):a%b; }
+    }
+  }
+  const FUNCS={racine:1,abs:1,ent:1,arrondi:[1,2],carre:1,longueur:1,max:2,min:2,taille:[1,2]};
+  function call(e,rt,line){
+    if(rt.subs&&rt.subs.has(e.fn)){ const c=(rt.frame||rt.top).cache;
+      if(c.has(e)) return c.get(e);
+      throw new AlgoError(line,"La fonction « "+e.raw+" » ne peut pas être appelée ici.","Les constantes et les tailles de tableaux doivent être des valeurs fixes."); }
+    const spec=FUNCS[e.fn];
+    if(!spec){ const s=closest(e.fn,Object.keys(FUNCS).concat(["ecrire","lire"]));
+      throw new AlgoError(line,"La fonction « "+e.raw+" » n'existe pas.",s?"Vouliez-vous écrire « "+(NICE[s]||s)+" » ?":"Fonctions disponibles : racine, abs, ent, arrondi, carre, longueur, max, min, taille."); }
+    const lo=Array.isArray(spec)?spec[0]:spec, hi=Array.isArray(spec)?spec[1]:spec;
+    if(e.args.length<lo||e.args.length>hi) throw new AlgoError(line,e.raw+" attend "+(lo===hi?lo:lo+" ou "+hi)+" valeur"+(hi>1?"s":"")+" entre parenthèses.","Exemple : "+e.fn+"("+(hi===2&&lo===2?"a, b":"x")+")");
+    if(e.fn==="taille"){ const r=e.args[0], v=r.k==="var"?look(rt,r.key):null;
+      if(!v||!v.isArr) throw new AlgoError(line,"taille attend le nom d'un tableau.","Exemple : taille(T) donne le nombre de cases de T.");
+      const d=e.args[1]?ev(e.args[1],rt,line):1;
+      if((d!==1&&d!==2)||d>v.dims.length) throw new AlgoError(line,"« "+v.name+" » n'a pas de dimension "+fmt(d)+".","taille(M, 1) donne le nombre de lignes, taille(M, 2) le nombre de colonnes.");
+      const D=v.dims[d-1]; return D.hi-D.lo+1; }
+    const a=e.args.map(x=>ev(x,rt,line));
+    if(e.fn==="longueur"){ if(typeof a[0]!=="string") throw new AlgoError(line,"longueur attend un texte.","Exemple : longueur(nom)"); return a[0].length; }
+    a.forEach(x=>{ if(typeof x!=="number") throw new AlgoError(line,e.raw+" attend un nombre, pas "+kind(x)+".",""); });
+    switch(e.fn){
+      case "racine": if(a[0]<0) throw new AlgoError(line,"La racine carrée d'un nombre négatif ("+fmt(a[0])+") n'existe pas.","Vérifiez que la valeur est positive avec un Si."); return clean(Math.sqrt(a[0]));
+      case "abs": return Math.abs(a[0]); case "ent": return Math.floor(a[0]); case "carre": return clean(a[0]*a[0]);
+      case "arrondi": { const p=Math.pow(10,a[1]||0); return clean(Math.round(a[0]*p)/p); }
+      case "max": return Math.max(a[0],a[1]); case "min": return Math.min(a[0],a[1]);
+    }
+  }
+  function cond(e,rt,line){ const c=ev(e,rt,line);
+    if(typeof c!=="boolean") throw new AlgoError(line,"La condition doit être vraie ou fausse, mais elle vaut "+fmt(c)+".","Écrivez une comparaison, par exemple : x > 0 ou x = 5."); return c; }
+  function convert(raw,type){
+    const s=raw.trim();
+    switch(type){
+      case "Entier": if(/^[+-]?\d+$/.test(s)) return {ok:true,v:parseInt(s,10)};
+        return {ok:false,msg:/^[+-]?\d+[.,]\d+$/.test(s)?"« "+s+" » est un nombre à virgule. Tapez un nombre entier, par exemple 12.":"Tapez un nombre entier, par exemple 12."};
+      case "Réel": { const t=s.replace(",","."); if(/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return {ok:true,v:parseFloat(t)};
+        return {ok:false,msg:"Tapez un nombre, par exemple 12 ou 12.5."}; }
+      case "Caractère": if(raw.length===1) return {ok:true,v:raw}; if(s.length===1) return {ok:true,v:s};
+        return {ok:false,msg:"Tapez un seul caractère, par exemple A."};
+      case "Booléen": { const n=norm(s); if(["vrai","v","oui","1"].includes(n)) return {ok:true,v:true}; if(["faux","f","non","0"].includes(n)) return {ok:true,v:false};
+        return {ok:false,msg:"Tapez Vrai ou Faux."}; }
+      default: return {ok:true,v:raw};
+    }
+  }
+  // ----- Fonctions et procédures -----
+  class Ret{ constructor(v){ this.v=v; } }
+  const dimsTxt=ds=>"["+ds.map(D=>D.lo+".."+D.hi).join(", ")+"]";
+  function allocArr(d,v,rt){ let size=1;
+    v.dims=d.dims.map(D=>{ const b=x=>{ const n=ev(x,rt,d.line); if(typeof n!=="number"||!Number.isInteger(n)) throw new AlgoError(d.line,"La taille du tableau « "+d.name+" » doit être un nombre entier.","Exemple : Tableau[1..10] de Entier. Une constante entière est aussi acceptée : Tableau[1..N]."); return n; };
+      const lo=b(D.lo), hi=b(D.hi);
+      if(hi<lo) throw new AlgoError(d.line,"Le tableau « "+d.name+" » va de "+lo+" à "+hi+" : il n'a aucune case.","La deuxième borne doit être plus grande que la première, par exemple [1..10].");
+      size*=hi-lo+1; return {lo,hi}; });
+    if(size>10000) throw new AlgoError(d.line,"Le tableau « "+d.name+" » est trop grand ("+size+" cases).","Limitez-vous à 10 000 cases au maximum.");
+    v.isArr=true; v.elem=d.elem; v.value=new Array(size).fill(undefined);
+    v.type="Tableau"+dimsTxt(v.dims)+" de "+d.elem;
+  }
+  function bindParam(p,a,vars,rt,line,sub){
+    const who="Le paramètre « "+p.name+" » de « "+sub.name+" »";
+    if(p.arr){
+      if(a.k!=="var") throw new AlgoError(line,who+" attend un tableau.","Donnez le nom d'un tableau, sans crochets : "+sub.name+"(T)");
+      const src=getVar(rt,a,line);
+      if(!src.isArr) throw new AlgoError(line,who+" attend un tableau, mais « "+src.name+" » n'en est pas un.","Donnez le nom d'un tableau déclaré avec Tableau[…].");
+      if(src.elem!==p.elem) throw new AlgoError(line,who+" attend un tableau de "+p.elem+", mais « "+src.name+" » contient des cases de type "+src.elem+".","Les cases doivent avoir le même type.");
+      if(p.dims){ const want=p.dims.map(D=>({lo:ev(D.lo,rt,line),hi:ev(D.hi,rt,line)}));
+        if(want.length!==src.dims.length||want.some((D,k)=>D.lo!==src.dims[k].lo||D.hi!==src.dims[k].hi))
+          throw new AlgoError(line,who+" attend un tableau "+dimsTxt(want)+", mais « "+src.name+" » est un tableau "+dimsTxt(src.dims)+".","Les tailles doivent être identiques. Vous pouvez aussi écrire le paramètre sans taille : "+p.name+" : Tableau de "+p.elem); }
+      if(p.ref) vars.set(p.key,{name:p.name,key:p.key,isConst:false,isArr:true,elem:src.elem,refName:src.name,get dims(){ return src.dims; },get type(){ return src.type; },get value(){ return src.value; }});
+      else vars.set(p.key,{name:p.name,key:p.key,isConst:false,isArr:true,elem:src.elem,dims:src.dims.map(D=>({lo:D.lo,hi:D.hi})),type:src.type,value:src.value.slice()});
+      return;
+    }
+    if(p.ref){ let get,set,label,type;
+      if(a.k==="var"){ const src=getVar(rt,a,line);
+        if(src.isConst) throw new AlgoError(line,who+" est passé par variable (Var) : il ne peut pas recevoir la constante « "+src.name+" ».","Donnez une variable : ses modifications seront gardées après l'appel.");
+        if(src.isArr) throw arrErr(src,line);
+        type=src.type; label=src.name; get=()=>src.value; set=x=>{ src.value=x; }; }
+      else if(a.k==="idx"){ const c=cell(rt,a,line); type=c.v.elem; label=c.label; get=()=>c.v.value[c.off]; set=x=>{ c.v.value[c.off]=x; }; }
+      else throw new AlgoError(line,who+" est passé par variable (Var) : il faut lui donner une variable, pas une valeur.","Exemple : "+sub.name+"(x) où x est une variable. Ce que la procédure met dans le paramètre sera gardé dans x.");
+      if(type!==p.type) throw new AlgoError(line,who+" est de type "+p.type+", mais « "+label+" » est de type "+type+".","Avec Var, la variable donnée doit avoir exactement le même type que le paramètre.");
+      vars.set(p.key,{name:p.name,key:p.key,type:p.type,isConst:false,refName:label,get value(){ return get(); },set value(x){ set(x); }});
+      return;
+    }
+    const val=ev(a,rt,line);
+    try{ checkType(p.name,p.type,val,line); }catch(err){ err.message=who+" est de type "+p.type+" : il ne peut pas recevoir "+(typeof val===typeof 0&&p.type==="Entier"?"le nombre à virgule "+fmt(val):kind(val)+" ("+fmt(val)+")")+"."; throw err; }
+    vars.set(p.key,{name:p.name,key:p.key,type:p.type,value:val,isConst:false});
+  }
+  function* invoke(sub,e,rt,line){
+    const np=sub.params.length;
+    if(e.args.length!==np) throw new AlgoError(line,"« "+sub.name+" » attend "+(np===0?"aucun paramètre":np+" paramètre"+(np>1?"s":""))+", mais l'appel en donne "+e.args.length+".","Définition (ligne "+sub.line+") : "+sub.sig);
+    if(rt.frames.length>=500) throw new AlgoError(line,"Trop d'appels imbriqués de « "+sub.name+" » (plus de 500).","C'est sûrement une récursivité sans fin : vérifiez le cas d'arrêt (un Si qui retourne une valeur sans rappeler la fonction).");
+    const vars=new Map();
+    sub.params.forEach((p,k)=>bindParam(p,e.args[k],vars,rt,line,sub));
+    for(const d of sub.vars){ const v={name:d.name,key:d.key,type:d.type,value:undefined,isConst:false}; vars.set(d.key,v); if(d.dims) allocArr(d,v,rt); }
+    const fr={vars,cache:new Map(),sub,line};
+    rt.frames.push(fr); rt.frame=fr;
+    let ret=null;
+    try{
+      yield {type:"step",line:sub.line};
+      try{ yield* block(sub.body,rt); }catch(x){ if(!(x instanceof Ret)) throw x; ret=x; }
+      if(sub.isFunc&&!ret) throw new AlgoError(sub.endLine,"La fonction « "+sub.name+" » se termine sans retourner de valeur.","Ajoutez « Retourner … » avant la fin. Si vous utilisez des Si, chaque cas doit retourner une valeur.");
+      if(!ret) yield {type:"step",line:sub.endLine};
+      rt.frames.pop(); rt.frame=rt.frames[rt.frames.length-1]||null;
+    }catch(x){ if(x&&x.algo&&!x.where) x.where=(sub.isFunc?"dans la fonction ":"dans la procédure ")+sub.name; throw x; }
+    yield {type:"step",line,back:sub.name};
+    return ret?ret.v:undefined;
+  }
+  function* pre(e,rt,line){
+    if(!e||!rt.subs||!rt.subs.size) return;
+    switch(e.k){
+      case "bin": yield* pre(e.a,rt,line); yield* pre(e.b,rt,line); return;
+      case "un": yield* pre(e.a,rt,line); return;
+      case "idx": for(const x of e.idx) yield* pre(x,rt,line); return;
+      case "call": { for(const a of e.args) yield* pre(a,rt,line);
+        const sub=rt.subs.get(e.fn); if(!sub) return;
+        if(!sub.isFunc) throw new AlgoError(line,"« "+sub.name+" » est une procédure : elle ne retourne pas de valeur.","Appelez-la seule sur sa ligne : "+sub.name+"(…). Pour obtenir une valeur, écrivez une Fonction.");
+        const v=yield* invoke(sub,e,rt,line); (rt.frame||rt.top).cache.set(e,v); return; }
+    }
+  }
+  function* E(e,rt,line){ yield* pre(e,rt,line); return ev(e,rt,line); }
+  function* C(e,rt,line){ yield* pre(e,rt,line); return cond(e,rt,line); }
+  function* preIdx(t,rt,line){ if(t&&t.idx) for(const x of t.idx) yield* pre(x,rt,line); }
+
+  function* block(list,rt){ for(const s of list) yield* stmt(s,rt); }
+  function* stmt(s,rt){
+    const line=s.line;
+    switch(s.k){
+      case "assign": { yield {type:"step",line}; const val=yield* E(s.e,rt,line); yield* preIdx(s.target,rt,line); setVar(rt,s.target,val,line); break; }
+      case "write": { yield {type:"step",line}; const parts=[]; for(const a of s.args) parts.push(fmt(yield* E(a,rt,line))); rt.write(parts.join("")); break; }
+      case "return": { yield {type:"step",line}; let v;
+        if(s.e){ v=yield* E(s.e,rt,line); const sb=rt.frame.sub;
+          try{ checkType(sb.name,sb.rtype,v,line); }catch(err){ err.message="La fonction « "+sb.name+" » doit retourner un "+sb.rtype+", mais elle reçoit "+(sb.rtype==="Entier"&&typeof v==="number"?"le nombre à virgule "+fmt(v):kind(v)+" ("+fmt(v)+")")+"."; err.hint="Changez le type de la fonction (« : Réel » par exemple) ou la valeur retournée."; throw err; } }
+        throw new Ret(v); }
+      case "pcall": { yield {type:"step",line}; for(const a of s.call.args) yield* pre(a,rt,line); yield* invoke(rt.subs.get(s.call.fn),s.call,rt,line); break; }
+      case "read": yield {type:"step",line};
+        for(const t of s.targets){
+          yield* preIdx(t,rt,line);
+          if(t.idx){ const c=cell(rt,t,line); let err=null;
+            while(true){ const raw=yield {type:"input",line,name:c.label,vtype:c.v.elem,error:err};
+              const r=convert(String(raw),c.v.elem); if(r.ok){ setCell(rt,c,r.v,line); break; } err=r.msg; }
+            continue; }
+          const v=getVar(rt,t,line);
+          if(v.isConst) throw new AlgoError(line,"« "+v.name+" » est une constante : on ne peut pas la lire au clavier.","Utilisez une variable.");
+          if(v.isArr) throw new AlgoError(line,"On ne peut pas lire tout le tableau « "+v.name+" » d'un coup.","Lisez les cases une par une avec une boucle : Pour i de "+v.dims[0].lo+" à "+v.dims[0].hi+" Faire … Lire("+v.name+"[i]) … FinPour");
+          let err=null;
+          while(true){ const raw=yield {type:"input",line,name:v.name,vtype:v.type,error:err};
+            const r=convert(String(raw),v.type); if(r.ok){ setVar(rt,t,r.v,line); break; } err=r.msg; } }
+        break;
+      case "if": yield {type:"step",line};
+        if(yield* C(s.c,rt,line)) yield* block(s.then,rt); else if(s.else) yield* block(s.else,rt); break;
+      case "for": { yield {type:"step",line};
+        const num=function*(e,w){ const x=yield* E(e,rt,line); if(typeof x!=="number") throw new AlgoError(line,w+" de la boucle Pour doit être un nombre.",""); return x; };
+        const a=yield* num(s.a,"La valeur de départ"), b=yield* num(s.b,"La valeur d'arrivée"), p=s.st?yield* num(s.st,"Le pas"):1;
+        if(p===0) throw new AlgoError(line,"Le pas de la boucle Pour vaut 0 : la boucle ne finirait jamais.","Utilisez un pas positif ou négatif.");
+        let first=true;
+        for(let x=a; p>0?x<=b:x>=b; x=clean(x+p)){ if(!first) yield {type:"step",line}; first=false; setVar(rt,s.v,x,line); yield* block(s.body,rt); }
+        break; }
+      case "switch": { yield {type:"step",line}; const x=yield* E(s.e,rt,line);
+        const same=(y,l)=>{ if(typeof y!==typeof x) throw new AlgoError(l,"La valeur testée est "+kind(x)+" ("+fmt(x)+"), mais ce cas contient "+kind(y)+" ("+fmt(y)+").",typeof x==="number"?"Un nombre s'écrit sans guillemets : Cas 1 et non Cas \"1\".":"Les valeurs des cas doivent être du même type que la valeur testée."); return y; };
+        let hit=null;
+        for(const c of s.cases){
+          for(const v of c.vals){
+            if(v.v){ const y=same(yield* E(v.v,rt,c.line),c.line); if(typeof x==="number"?clean(x)===clean(y):x===y){ hit=c; break; } }
+            else { const lo=same(yield* E(v.lo,rt,c.line),c.line), hi=same(yield* E(v.hi,rt,c.line),c.line); if(x>=lo&&x<=hi){ hit=c; break; } } }
+          if(hit) break; }
+        if(!hit) hit=s.def;
+        if(hit){ if(!(hit.body[0]&&hit.body[0].inl)) yield {type:"step",line:hit.line}; yield* block(hit.body,rt); }
+        break; }
+      case "while": while(true){ yield {type:"step",line}; if(!(yield* C(s.c,rt,line))) break; yield* block(s.body,rt); } break;
+      case "repeat": yield {type:"step",line};
+        while(true){ yield* block(s.body,rt); yield {type:"step",line:s.untilLine}; if(yield* C(s.c,rt,s.untilLine)) break; } break;
+    }
+  }
+  function* run(prog,rt){
+    rt.subs=new Map((prog.subs||[]).map(x=>[x.key,x])); rt.frames=[]; rt.frame=null; rt.top={cache:new Map()};
+    for(const v of prog.vars) rt.env.set(v.key,{name:v.name,key:v.key,type:v.type,value:undefined,isConst:false});
+    for(const c of prog.consts){ const val=ev(c.e,rt,c.line);
+      rt.env.set(c.key,{name:c.name,key:c.key,type:typeof val==="number"?(Number.isInteger(val)?"Entier":"Réel"):typeof val==="string"?"Chaîne":"Booléen",value:val,isConst:true}); }
+    for(const d of prog.vars) if(d.dims) allocArr(d,rt.env.get(d.key),rt);
+    yield* block(prog.body,rt);
+  }
+  return {compile,run,fmt,norm,AlgoError,isL};
+})();
+if(typeof module!=="undefined") module.exports=Algo;
+</script>
+
+<script>
+(function(){
+  "use strict";
+  const $=id=>document.getElementById(id);
+  const ta=$("code"), hl=$("hl"), gutter=$("gutter"), band=$("band"), cons=$("console");
+  const LIMIT=200000, MAXOUT=3000, MAXTRACE=400, LH=24, PAD=12;
+
+  const EXAMPLES=[
+    ["Surface d'un rectangle",`Algorithme Surface_rectangle
+Variables
+   Long, Larg, S : Réel
+Début
+   Écrire("Donner la longueur : ")
+   Lire(Long)
+   Écrire("Donner la largeur : ")
+   Lire(Larg)
+   S ← Long * Larg
+   Écrire("Surface = ", S)
+Fin`],
+    ["Admis ou non admis (Si … Sinon)",`Algorithme Resultat
+Variables
+   moy : Réel
+Début
+   Écrire("Donner la moyenne : ")
+   Lire(moy)
+   Si moy >= 10 Alors
+      Écrire("Admis")
+   Sinon
+      Écrire("Non admis")
+   FinSi
+Fin`],
+    ["Pair ou impair (mod)",`Algorithme Parite
+Variables
+   n : Entier
+Début
+   Écrire("Donner un entier : ")
+   Lire(n)
+   Si n mod 2 = 0 Alors
+      Écrire(n, " est pair")
+   Sinon
+      Écrire(n, " est impair")
+   FinSi
+Fin`],
+    ["Somme de 1 à N (Pour)",`Algorithme Somme
+Variables
+   N, i, S : Entier
+Début
+   Écrire("Donner N : ")
+   Lire(N)
+   S ← 0
+   Pour i de 1 à N Faire
+      S ← S + i
+   FinPour
+   Écrire("Somme = ", S)
+Fin`],
+    ["Saisie contrôlée d'une note (Tant que)",`Algorithme Saisie_note
+Variables
+   note : Réel
+Début
+   Écrire("Donner une note entre 0 et 20 : ")
+   Lire(note)
+   Tant que (note < 0) OU (note > 20) Faire
+      Écrire("Note invalide, recommencer : ")
+      Lire(note)
+   FinTantQue
+   Écrire("Note enregistrée : ", note)
+Fin`],
+    ["Table de multiplication",`Algorithme Table
+Variables
+   N, i : Entier
+Début
+   Écrire("Table de quel nombre ? ")
+   Lire(N)
+   Pour i de 1 à 10 Faire
+      Écrire(N, " x ", i, " = ", N * i)
+   FinPour
+Fin`],
+    ["Périmètre et surface d'un cercle (constante)",`Algorithme Cercle
+Constantes
+   PI = 3.14
+Variables
+   R, P, S : Réel
+Début
+   Écrire("Donner le rayon : ")
+   Lire(R)
+   P ← 2 * PI * R
+   S ← PI * R * R
+   Écrire("Périmètre = ", P)
+   Écrire("Surface = ", S)
+Fin`],
+    ["Jour de la semaine (Selon)",`Algorithme Jour
+Variables
+   n : Entier
+Début
+   Écrire("Numéro du jour (1 à 7) : ")
+   Lire(n)
+   Selon n Faire
+      Cas 1 : Écrire("Lundi")
+      Cas 2 : Écrire("Mardi")
+      Cas 3 : Écrire("Mercredi")
+      Cas 4 : Écrire("Jeudi")
+      Cas 5 : Écrire("Vendredi")
+      Cas 6, 7 :
+         Écrire("Week-end !")
+      Sinon :
+         Écrire("Numéro invalide")
+   FinSelon
+Fin`],
+    ["Mention d'une note (Selon avec intervalles)",`Algorithme Mention
+Variables
+   note : Entier
+Début
+   Écrire("Note sur 20 (entière) : ")
+   Lire(note)
+   Selon note Faire
+      Cas 0..9 : Écrire("Non admis")
+      Cas 10..11 : Écrire("Passable")
+      Cas 12..13 : Écrire("Assez bien")
+      Cas 14..15 : Écrire("Bien")
+      Cas 16..20 : Écrire("Très bien")
+      Sinon : Écrire("Note impossible")
+   FinSelon
+Fin`],
+    ["Fonction : le plus grand de deux nombres",`Algorithme Maximum
+Variables
+   a, b, m : Entier
+
+Fonction Max(x : Entier, y : Entier) : Entier
+Début
+   Si x > y Alors
+      Retourner x
+   Sinon
+      Retourner y
+   FinSi
+FinFonction
+
+Début
+   Écrire("Premier nombre : ")
+   Lire(a)
+   Écrire("Deuxième nombre : ")
+   Lire(b)
+   m ← Max(a, b)
+   Écrire("Le plus grand est ", m)
+Fin`],
+    ["Procédure avec Var : échanger deux valeurs",`Algorithme Echange
+Variables
+   a, b : Entier
+
+Procédure Echanger(Var x : Entier, Var y : Entier)
+Variables
+   t : Entier
+Début
+   t ← x
+   x ← y
+   y ← t
+FinProcédure
+
+Début
+   a ← 3
+   b ← 8
+   Écrire("Avant : a = ", a, ", b = ", b)
+   Echanger(a, b)
+   Écrire("Après : a = ", a, ", b = ", b)
+Fin`],
+    ["Récursivité : factorielle",`Algorithme Factorielle
+Variables
+   n : Entier
+
+Fonction Fact(k : Entier) : Entier
+Début
+   Si k <= 1 Alors
+      Retourner 1
+   FinSi
+   Retourner k * Fact(k - 1)
+FinFonction
+
+Début
+   Écrire("Calculer la factorielle de : ")
+   Lire(n)
+   Écrire(n, "! = ", Fact(n))
+Fin`],
+    ["Procédure qui remplit un tableau",`Algorithme Remplir
+Constantes
+   N = 4
+Variables
+   T : Tableau[1..N] de Entier
+   i : Entier
+
+Procédure Saisir(Var V : Tableau de Entier)
+Variables
+   k : Entier
+Début
+   Pour k de 1 à taille(V) Faire
+      Écrire("Valeur ", k, " : ")
+      Lire(V[k])
+   FinPour
+FinProcédure
+
+Fonction Somme(V : Tableau de Entier) : Entier
+Variables
+   k, s : Entier
+Début
+   s ← 0
+   Pour k de 1 à taille(V) Faire
+      s ← s + V[k]
+   FinPour
+   Retourner s
+FinFonction
+
+Début
+   Saisir(T)
+   Écrire("Somme = ", Somme(T))
+Fin`],
+    ["Plus grande note d'un tableau",`Algorithme Max_tableau
+Constantes
+   N = 5
+Variables
+   T : Tableau[1..N] de Réel
+   i : Entier
+   max : Réel
+Début
+   Pour i de 1 à N Faire
+      Écrire("Note n°", i, " : ")
+      Lire(T[i])
+   FinPour
+   max ← T[1]
+   Pour i de 2 à N Faire
+      Si T[i] > max Alors
+         max ← T[i]
+      FinSi
+   FinPour
+   Écrire("La plus grande note est ", max)
+Fin`],
+    ["Tri d'un tableau (tri à bulles)",`Algorithme Tri_bulles
+Variables
+   T : Tableau[1..6] de Entier
+   i, j, tmp : Entier
+Début
+   T[1] ← 7
+   T[2] ← 3
+   T[3] ← 9
+   T[4] ← 1
+   T[5] ← 6
+   T[6] ← 2
+   Pour i de 1 à taille(T) - 1 Faire
+      Pour j de 1 à taille(T) - i Faire
+         Si T[j] > T[j + 1] Alors
+            tmp ← T[j]
+            T[j] ← T[j + 1]
+            T[j + 1] ← tmp
+         FinSi
+      FinPour
+   FinPour
+   Pour i de 1 à taille(T) Faire
+      Écrire(T[i])
+   FinPour
+Fin`],
+    ["Matrice : table de Pythagore",`Algorithme Matrice
+Variables
+   M : Tableau[1..4, 1..5] de Entier
+   i, j : Entier
+Début
+   Pour i de 1 à 4 Faire
+      Pour j de 1 à 5 Faire
+         M[i, j] ← i * j
+      FinPour
+   FinPour
+   Écrire("M[3, 4] = ", M[3, 4])
+Fin`]
+  ];
+
+  // ---------- Éditeur ----------
+  const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const KW=new Set("algorithme variables variable constantes constante debut fin si alors sinon finsi pour de pas faire finpour tant que tantque fintantque repeter jusqu jusqua lire ecrire afficher et ou non mod div vrai faux selon cas finselon suivant autrement fonction procedure finfonction finprocedure retourner retourne renvoyer appeler var".split(" "));
+  const TY=new Set("entier reel chaine caractere booleen tableau".split(" "));
+  const RX=/(\/\/.*$)|(jusqu['’][àa])|("[^"]*"?|“[^”]*”?|«[^»]*»?|'[^']*'?)|(\d+(?:\.\d+)?)|([A-Za-zÀ-ÖØ-öø-ÿ_][A-Za-zÀ-ÖØ-öø-ÿ0-9_]*)|(←|<-|≠|≤|≥|<=|>=|<>)|([&<>])/gi;
+  function paint(){
+    const lines=ta.value.split("\n");
+    hl.innerHTML=lines.map(l=>l.replace(RX,(m,c,j,s,n,w,o,x)=>{
+      if(c) return '<span class="c">'+esc(c)+'</span>';
+      if(j) return '<span class="k">'+esc(j)+'</span>';
+      if(s) return '<span class="s">'+esc(s)+'</span>';
+      if(n) return '<span class="n">'+n+'</span>';
+      if(w){ const k=Algo.norm(w); return KW.has(k)||w==="à"?'<span class="k">'+w+'</span>':TY.has(k)?'<span class="t">'+w+'</span>':w; }
+      if(o) return '<span class="o">'+esc(o)+'</span>';
+      return esc(x);
+    })).join("\n")+"\n";
+    let g=""; for(let i=1;i<=lines.length;i++) g+='<span data-l="'+i+'">'+i+'</span>';
+    gutter.innerHTML=g; markGutter(); sync();
+  }
+  let bandLine=0, bandKind="";
+  function sync(){
+    hl.scrollTop=ta.scrollTop; hl.scrollLeft=ta.scrollLeft;
+    gutter.style.transform="translateY("+(-ta.scrollTop)+"px)";
+    if(bandLine){ band.style.display="block"; band.style.top=(PAD+(bandLine-1)*LH-ta.scrollTop)+"px"; band.className="band"+(bandKind==="err"?" err":""); }
+    else band.style.display="none";
+  }
+  function markGutter(){
+    gutter.querySelectorAll(".cur,.bad").forEach(e=>e.className="");
+    if(bandLine){ const e=gutter.querySelector('[data-l="'+bandLine+'"]'); if(e) e.className=bandKind==="err"?"bad":"cur"; }
+  }
+  function setBand(line,kind){
+    bandLine=line||0; bandKind=kind||"";
+    if(bandLine){ const top=PAD+(bandLine-1)*LH, h=ta.clientHeight;
+      if(top<ta.scrollTop+LH) ta.scrollTop=Math.max(0,top-LH*2);
+      else if(top>ta.scrollTop+h-LH*2) ta.scrollTop=top-h+LH*3; }
+    markGutter(); sync(); flowMark();
+  }
+  function insert(text,from,to){
+    ta.focus();
+    if(from!==undefined) ta.setSelectionRange(from,to);
+    let ok=false; try{ ok=document.execCommand("insertText",false,text); }catch(e){}
+    if(!ok){ ta.setRangeText(text,ta.selectionStart,ta.selectionEnd,"end"); onEdit(); }
+  }
+  function save(){ try{ localStorage.setItem("algo-code",ta.value); }catch(e){} }
+  function onEdit(){ if(S.gen) stop(true); clearError(); paint(); save(); renderFlow(); }
+  ta.addEventListener("input",ev=>{
+    const p=ta.selectionStart;
+    if(ev.data==="-"&&p>=2&&ta.value.slice(p-2,p)==="<-"){ ta.setRangeText("←",p-2,p,"end"); }
+    onEdit();
+  });
+  ta.addEventListener("scroll",sync);
+  ta.addEventListener("keydown",ev=>{
+    if(ev.key==="Tab"&&!ev.shiftKey&&!ev.ctrlKey&&!ev.altKey&&!ev.metaKey){ ev.preventDefault(); insert("   "); }
+    else if(ev.key==="Enter"&&(ev.ctrlKey||ev.metaKey)){ ev.preventDefault(); $("run").click(); }
+    else if(ev.key==="Enter"&&!ev.shiftKey){
+      const p=ta.selectionStart, start=ta.value.lastIndexOf("\n",p-1)+1, cur=ta.value.slice(start,p);
+      let ind=cur.match(/^[ \t]*/)[0]; const n=Algo.norm(cur.replace(/\/\/.*$/,"").trim());
+      if(/(alors|faire|sinon|debut|repeter)$/.test(n)||/^(variables?|constantes?)$/.test(n)) ind+="   ";
+      ev.preventDefault(); insert("\n"+ind);
+    }
+  });
+  document.querySelectorAll("[data-ins]").forEach(b=>b.addEventListener("click",()=>insert(b.dataset.ins)));
+  window.addEventListener("resize",sync);
+
+  // ---------- État d'exécution ----------
+  const S={gen:null,mode:null,steps:0,rt:null,feed:undefined,timer:0,lastLine:null,lastWrite:false,out:0,trace:[],shown:0,prev:{},src:[],waiting:false};
+  function status(s,text){ const e=$("status"); e.dataset.s=s; e.textContent=text; }
+  function buttons(){
+    const active=!!S.gen;
+    $("stop").disabled=!active;
+    const slow=active&&(S.mode==="step"||S.mode==="auto");
+    $("run").textContent=slow?"▶ Continuer":"▶ Exécuter";
+    $("run").disabled=active&&S.mode==="run";
+    $("step").disabled=active&&(S.mode==="run"||S.waiting);
+    $("step").textContent=slow?"Instruction suivante":"Pas à pas";
+    $("auto").disabled=active&&S.mode==="run";
+    $("auto").textContent=active&&S.mode==="auto"?"⏸ Pause":"⏵ Lecture auto";
+  }
+  function clearError(){ $("errbox").className="errbox"; $("errbox").innerHTML=""; $("warn").className="warn"; if(bandKind==="err") setBand(0); }
+  function showError(e){
+    const box=$("errbox");
+    const line=e.algo?e.line:0;
+    box.innerHTML="<strong>"+(line?"Erreur à la ligne "+line:"Erreur")+(e.where?" ("+esc(e.where)+")":"")+"</strong>"+esc(e.algo?e.message:"Un problème inattendu s'est produit ("+e.message+").")+(e.hint?'<div class="hint"><b>Conseil : </b>'+esc(e.hint)+"</div>":"");
+    box.className="errbox on"; setBand(line,"err"); status("error","Erreur"+(line?" ligne "+line:""));
+  }
+  function sysLine(text,cls){ const d=document.createElement("div"); d.className="line "+(cls||"sys"); d.textContent=text; cons.appendChild(d); cons.scrollTop=cons.scrollHeight; S.lastWrite=false; return d; }
+  function write(text){
+    if(++S.out>MAXOUT) throw new Algo.AlgoError(S.line,"L'exécution a été arrêtée : plus de "+MAXOUT+" lignes affichées.","Il s'agit sûrement d'une boucle infinie : vérifiez que la condition de la boucle finit par devenir fausse.");
+    const d=document.createElement("div"); d.className="line"; d.textContent=text; cons.appendChild(d); S.lastLine=d; S.lastWrite=true;
+  }
+  function changed(line){
+    if(S.trace.length>=MAXTRACE) { S.traceCut=true; return; }
+    const vals=getCols().map(c=>c.get()), last=S.trace[S.trace.length-1];
+    if(S.rt.frame&&last&&last.vals.every((x,k)=>x===vals[k])) return;
+    S.trace.push({line,vals});
+  }
+
+  // ---------- Mémoire ----------
+  const cellVal=x=>x===undefined?null:Algo.fmt(x);
+  function idxLabel(v,off){ if(v.dims.length===1) return String(v.dims[0].lo+off);
+    const w=v.dims[1].hi-v.dims[1].lo+1; return (v.dims[0].lo+Math.floor(off/w))+", "+(v.dims[1].lo+off%w); }
+  function getCols(){
+    if(S.cols) return S.cols;
+    const cols=[];
+    for(const k of S.order){ const v=S.rt.env.get(k); if(!v) continue;
+      if(v.isArr){ const n=v.value.length;
+        if(n<=12) for(let off=0;off<n;off++) cols.push({name:v.name+"["+idxLabel(v,off)+"]",get:()=>cellVal(v.value[off])});
+        else cols.push({name:v.name,get:()=>v.value.slice(0,30).map(x=>x===undefined?"–":Algo.fmt(x)).join(" ")+(n>30?" …":"")}); }
+      else cols.push({name:v.name,get:()=>cellVal(v.value)});
+    }
+    return S.cols=cols;
+  }
+  const MAXCELLS=300;
+  function arrHTML(v,pf){
+    const one=(off,cls)=>{ const x=v.value[off], val=cellVal(x), k=(pf||"")+v.key+"#"+off, chg=S.prev[k]!==undefined&&S.prev[k]!==val; S.prev[k]=val;
+      return {cls:(val===null?" none":"")+(chg?" chg":""),txt:val===null?"–":esc(typeof x==="string"?'"'+val+'"':val)}; };
+    const n=Math.min(v.value.length,MAXCELLS), more=v.value.length>MAXCELLS?'<span class="more">… '+v.value.length+" cases au total</span>":"";
+    if(v.dims.length===1){ let h='<div class="cells">';
+      for(let off=0;off<n;off++){ const c=one(off); h+='<span class="cell'+c.cls+'"><i>'+(v.dims[0].lo+off)+"</i><b>"+c.txt+"</b></span>"; }
+      return h+more+"</div>"; }
+    const [R,C]=v.dims, w=C.hi-C.lo+1;
+    let h='<div class="grid" style="grid-template-columns:auto repeat('+w+',auto)"><i></i>';
+    for(let j=C.lo;j<=C.hi;j++) h+="<i>"+j+"</i>";
+    for(let off=0;off<n;off++){ if(off%w===0) h+="<i>"+(R.lo+off/w)+"</i>"; const c=one(off); h+='<b class="'+c.cls.trim()+'">'+c.txt+"</b>"; }
+    return h+"</div>"+more;
+  }
+  function renderVars(){
+    const box=$("mem-vars");
+    if(!S.rt){ box.innerHTML='<div class="empty">Les variables et leurs valeurs s\'afficheront ici pendant l\'exécution.</div>'; return; }
+    const frames=S.rt.frames||[];
+    const groups=[{title:frames.length?"Algorithme principal":null,list:[...S.rt.env.values()],pf:""}];
+    frames.forEach((f,k)=>groups.push({title:(f.sub.isFunc?"Fonction ":"Procédure ")+f.sub.name+" · appelée à la ligne "+f.line+(k===frames.length-1?" · en cours":""),list:[...f.vars.values()],pf:"f"+k+":",cur:k===frames.length-1}));
+    if(!groups.some(g=>g.list.length)){ box.innerHTML='<div class="empty">Cet algorithme ne déclare aucune variable.</div>'; return; }
+    let h="<table><thead><tr><th>Nom</th><th>Type</th><th>Valeur</th></tr></thead><tbody>";
+    for(const g of groups){
+      if(g.title) h+='<tr class="fgrp'+(g.cur?" cur":"")+'"><td colspan="3">'+esc(g.title)+"</td></tr>";
+      if(!g.list.length&&g.title) h+='<tr><td colspan="3" class="none">aucune variable</td></tr>';
+      for(const v of g.list){
+        const ty=esc(v.type)+(v.isConst?" (constante)":"")+(v.refName?' <span class="refto">Var → '+esc(v.refName)+"</span>":"");
+        if(v.isArr){ h+="<tr><td class=\"m\">"+esc(v.name)+"</td><td>"+ty+"</td><td class=\"arr\">"+arrHTML(v,g.pf)+"</td></tr>"; continue; }
+        const val=v.value===undefined?null:Algo.fmt(v.value), pk=g.pf+v.key; const chg=S.prev[pk]!==undefined&&S.prev[pk]!==val;
+        h+="<tr><td class=\"m\">"+esc(v.name)+"</td><td>"+ty+"</td><td class=\"v"+(val===null?" none":"")+(chg?" chg":"")+"\">"+(val===null?"pas encore de valeur":esc(typeof v.value==="string"?'"'+val+'"':val))+"</td></tr>";
+        S.prev[pk]=val; }
+    }
+    box.innerHTML=h+"</tbody></table>";
+  }
+  function renderTrace(){
+    const box=$("mem-trace");
+    if(!S.rt||!S.order.length){ box.innerHTML='<div class="empty">Chaque changement de valeur ajoutera une ligne à ce tableau.</div>'; S.shown=0; return; }
+    let tb=box.querySelector("tbody");
+    if(!tb){ box.innerHTML="<table><thead><tr><th>Ligne</th><th>Instruction</th>"+getCols().map(c=>"<th>"+esc(c.name)+"</th>").join("")+"</tr></thead><tbody></tbody></table>"; tb=box.querySelector("tbody"); S.shown=0; }
+    let h="";
+    for(;S.shown<S.trace.length;S.shown++){ const r=S.trace[S.shown];
+      h+="<tr><td class=\"m\">"+r.line+"</td><td class=\"m\">"+esc(S.src[r.line-1]||"")+"</td>"+r.vals.map(v=>"<td class=\"v"+(v===null?" none":"")+"\">"+(v===null?"–":esc(v))+"</td>").join("")+"</tr>"; }
+    if(h){ tb.insertAdjacentHTML("beforeend",h); box.scrollTop=box.scrollHeight; }
+  }
+  function refresh(){ renderVars(); renderTrace(); cons.scrollTop=cons.scrollHeight; }
+  function tab(which){
+    $("tab-vars").setAttribute("aria-selected",which==="vars"); $("tab-trace").setAttribute("aria-selected",which==="trace");
+    $("mem-vars").hidden=which!=="vars"; $("mem-trace").hidden=which!=="trace";
+  }
+  $("tab-vars").addEventListener("click",()=>tab("vars"));
+  $("tab-trace").addEventListener("click",()=>tab("trace"));
+
+  // ---------- Pilotage ----------
+  function start(mode){
+    clearError(); clearTimeout(S.timer); cons.innerHTML=""; setBand(0);
+    Object.assign(S,{gen:null,mode,steps:0,feed:undefined,lastLine:null,lastWrite:false,out:0,trace:[],shown:0,prev:{},traceCut:false,waiting:false,rt:null,order:[],cols:null});
+    $("mem-trace").innerHTML="";
+    let c;
+    try{ c=Algo.compile(ta.value); }catch(e){ refresh(); buttons(); showError(e); return; }
+    if(c.warnings.length){ $("warn").textContent=c.warnings.map(w=>w.msg).join(" "); $("warn").className="warn on"; }
+    S.src=ta.value.split("\n").map(l=>l.trim());
+    S.rt={env:new Map(),write,changed};
+    S.order=c.program.vars.map(v=>v.key);
+    S.gen=Algo.run(c.program,S.rt);
+    status("run","Exécution en cours");
+    advance();
+  }
+  function advance(){
+    if(!S.gen) return;
+    const t0=performance.now();
+    try{
+      while(true){
+        const r=S.gen.next(S.feed); S.feed=undefined;
+        if(r.done){ finish(); return; }
+        const e=r.value; S.line=e.line;
+        if(e.type==="input"){ ask(e); return; }
+        if(++S.steps>LIMIT) throw new Algo.AlgoError(e.line,"L'exécution a été arrêtée : plus de "+LIMIT.toLocaleString("fr-FR")+" instructions exécutées.","Il s'agit sûrement d'une boucle infinie : vérifiez que la condition de la boucle finit par devenir fausse.");
+        if(S.mode==="step"){ setBand(e.line,"exec"); status("step",e.back?"Retour de "+e.back+" : ligne "+e.line:"Pas à pas : ligne "+e.line+" à exécuter"); refresh(); buttons(); return; }
+        if(S.mode==="auto"){ setBand(e.line,"exec"); status("step","Lecture auto : ligne "+e.line); refresh(); buttons(); S.timer=setTimeout(advance,delay()); return; }
+        if(performance.now()-t0>40){ refresh(); buttons(); S.timer=setTimeout(advance,0); return; }
+      }
+    }catch(err){ S.gen=null; S.waiting=false; refresh(); buttons(); showError(err); sysLine("Exécution interrompue par une erreur.","bad"); }
+  }
+  function finish(){
+    S.gen=null; S.waiting=false; S.toEnd=true; setBand(0); S.toEnd=false; refresh();
+    if(S.traceCut) sysLine("La table de trace est limitée aux "+MAXTRACE+" premiers changements.");
+    sysLine("Fin de l'exécution."); status("done","Terminé"); buttons();
+  }
+  function stop(silent){
+    clearTimeout(S.timer); S.gen=null; S.waiting=false;
+    const f=cons.querySelector("form"); if(f) f.remove();
+    setBand(0); if(!silent) sysLine("Exécution arrêtée."); status("idle","Prêt"); buttons();
+  }
+  function ask(e){
+    S.waiting=true; setBand(e.line,"exec"); refresh();
+    if(e.error) sysLine(e.error,"bad");
+    let host=S.lastWrite&&S.lastLine?S.lastLine:null;
+    if(!host){ host=document.createElement("div"); host.className="line"; cons.appendChild(host); }
+    const form=document.createElement("form"), inp=document.createElement("input"), ok=document.createElement("button");
+    inp.id="console-input"; inp.type="text"; inp.autocomplete="off"; inp.setAttribute("aria-label","Valeur de "+e.name+" ("+e.vtype+")"); inp.placeholder=e.name+" ("+e.vtype+")";
+    if(e.vtype==="Entier"||e.vtype==="Réel") inp.inputMode="decimal";
+    ok.type="submit"; ok.textContent="Valider";
+    form.append(inp,ok); host.append(" ",form);
+    form.addEventListener("submit",ev=>{ ev.preventDefault(); const val=inp.value; form.remove();
+      const sp=document.createElement("span"); sp.className="typed"; sp.textContent=val; host.append(sp);
+      S.lastWrite=false; S.lastLine=null; S.waiting=false; S.feed=val; status("run","Exécution en cours"); buttons(); advance(); });
+    status("input","En attente : tapez la valeur de "+e.name); buttons();
+    cons.scrollTop=cons.scrollHeight; inp.focus({preventScroll:true});
+  }
+  $("run").addEventListener("click",()=>{ if(S.gen&&(S.mode==="step"||S.mode==="auto")){ clearTimeout(S.timer); S.mode="run"; setBand(0); buttons(); if(!S.waiting){ status("run","Exécution en cours"); advance(); } } else start("run"); });
+  $("step").addEventListener("click",()=>{
+    if(S.gen&&S.mode==="auto"){ clearTimeout(S.timer); S.mode="step"; if(!S.waiting) advance(); else buttons(); }
+    else if(S.gen&&S.mode==="step"){ if(!S.waiting) advance(); } else start("step"); });
+  $("auto").addEventListener("click",()=>{
+    if(S.gen&&S.mode==="auto"){ clearTimeout(S.timer); S.mode="step"; buttons(); if(!S.waiting) status("step","En pause : ligne "+S.line+" à exécuter"); }
+    else if(S.gen&&S.mode==="step"){ S.mode="auto"; buttons(); if(!S.waiting) advance(); }
+    else start("auto"); });
+  const DELAYS=[0,1500,900,500,250,90];
+  function delay(){ return DELAYS[+$("speed").value]||500; }
+  try{ const sp=localStorage.getItem("algo-speed"); if(sp) $("speed").value=sp; }catch(e){}
+  $("speed").addEventListener("input",()=>{ try{ localStorage.setItem("algo-speed",$("speed").value); }catch(e){} });
+  $("stop").addEventListener("click",()=>stop(false));
+
+  // ---------- Boutons d'insertion ----------
+  const SNIP={ecrire:'Écrire("|")',lire:"Lire(|)",si:"Si | Alors\n   \nFinSi",sisinon:"Si | Alors\n   \nSinon\n   \nFinSi",pour:"Pour i de 1 à | Faire\n   \nFinPour",tantque:"Tant que | Faire\n   \nFinTantQue",selon:"Selon | Faire\n   Cas 1 :\n      \n   Cas 2 :\n      \n   Sinon :\n      \nFinSelon"};
+  const SUB_SNIP={fonction:"Fonction |Nom(x : Entier) : Entier\nVariables\n   r : Entier\nDébut\n   r ← x * 2\n   Retourner r\nFinFonction",
+    procedure:"Procédure |Nom(x : Entier)\nDébut\n   Écrire(x)\nFinProcédure"};
+  function insertSnippet(key){
+    if(SUB_SNIP[key]){ const base=ta.value.replace(/\s+$/,""), pre=base?base+"\n\n":"", body=SUB_SNIP[key], k=body.indexOf("|");
+      ta.value=pre+body.replace("|",""); ta.focus(); const pos=pre.length+k; ta.setSelectionRange(pos,pos+3); onEdit(); ta.scrollTop=ta.scrollHeight; sync(); return; }
+    const v=ta.value, p=ta.selectionStart, ls=v.lastIndexOf("\n",p-1)+1; let le=v.indexOf("\n",p); if(le<0) le=v.length;
+    const cur=v.slice(ls,le); let ind=cur.match(/^[ \t]*/)[0], from, to, pre="", post="";
+    const n=Algo.norm(cur.replace(/\/\/.*$/,"").trim());
+    if(n===""){ from=ls; to=le; }
+    else if(n==="fin"){ from=to=ls; ind+="   "; post="\n"; }
+    else { if(/(alors|faire|sinon|debut|repeter|:)$/.test(n)) ind+="   "; from=to=le; pre="\n"; }
+    const body=SNIP[key].split("\n").map(l=>ind+l).join("\n"), k=body.indexOf("|");
+    insert(pre+body.replace("|","")+post,from,to);
+    const pos=from+pre.length+k; ta.setSelectionRange(pos,pos);
+  }
+  document.querySelectorAll("[data-snip]").forEach(b=>b.addEventListener("click",()=>insertSnippet(b.dataset.snip)));
+
+  // ---------- Organigramme ----------
+  let view="text", FL=[], FP=null;
+  const flow=$("flow");
+  const indentOf=line=>((FL[line-1]||"").match(/^ */)[0].length);
+  const rawLine=line=>(FL[line-1]||"").replace(/\s*\/\/[^"]*$/,"").trim();
+  function setView(v){
+    view=v; const f=v==="flow";
+    $("editor").hidden=f; flow.hidden=!f; $("ins-text").hidden=f; $("ins-flow").hidden=!f;
+    $("view-text").setAttribute("aria-selected",!f); $("view-flow").setAttribute("aria-selected",f);
+    try{ localStorage.setItem("algo-view",v); }catch(e){}
+    if(f) renderFlow(); else sync();
+  }
+  $("view-text").addEventListener("click",()=>setView("text"));
+  $("view-flow").addEventListener("click",()=>setView("flow"));
+  function nodeLabel(s){
+    const t=s.inl?rawLine(s.line).replace(/^[^:]*:\s*/,""):rawLine(s.line); let m;
+    if(s.k==="switch") return (m=t.match(/^(?:selon|suivant)\s+(.*?)(?:\s+faire)?$/i))?"Selon "+m[1]:t;
+    if(s.k==="if") return (m=t.match(/^(?:sinon\s+)?si\s+(.*?)\s+alors$/i))?m[1]+" ?":t;
+    if(s.k==="while") return (m=t.match(/^tant\s*que\s+(.*?)\s+faire$/i))?m[1]+" ?":t;
+    if(s.k==="for") return (m=t.match(/^pour\s+(.*?)\s+faire$/i))?"Pour "+m[1]:t;
+    if(s.k==="repeat"){ const u=rawLine(s.untilLine); return (m=u.match(/^jusqu['’]?\s*[àa]\s+(.*)$/i))?m[1]+" ?":u; }
+    return t;
+  }
+  function fConn(add,label,noArrow){
+    return '<div class="conn'+(noArrow?" na":"")+'">'+(label?'<span class="lbl">'+label+"</span>":"")+
+      (add?'<button type="button" class="add" data-at="'+add.at+'" data-ind="'+add.ind+'" data-pre="'+esc(add.pre||"")+'" aria-label="Ajouter un symbole ici">+</button>':"")+"</div>";
+  }
+  function fNode(cls,text,line,from,end,nodel){
+    return '<button type="button" class="node '+cls+'" data-line="'+line+'" data-from="'+from+'" data-end="'+end+'"'+(nodel?' data-nodel="1"':"")+">"+esc(text)+"</button>";
+  }
+  function fSeq(list,endAt,endInd,o){
+    o=o||{}; let h="";
+    list.forEach((s,i)=>{ h+=fConn(o.lock?null:{at:s.line,ind:indentOf(s.line)},i===0?o.label:null); h+=fStmt(s,o.lock); });
+    h+=fConn(o.lock?null:{at:endAt,ind:endInd,pre:o.pre},list.length?null:o.label,o.noArrow);
+    return '<div class="seq">'+h+"</div>";
+  }
+  function fStmt(s,nodel){
+    const ind=indentOf(s.line), lab=nodeLabel(s);
+    switch(s.k){
+      case "assign": return fNode("proc",lab,s.line,s.line,s.line);
+      case "write": case "read": return fNode("io",lab,s.line,s.line,s.line);
+      case "if": return '<div class="if">'+fNode("dec",lab,s.line,s.line,s.endLine,nodel)+'<div class="stub"></div><div class="branches"><div class="br l">'+
+        fSeq(s.then,s.elseLine||s.endLine,ind+3,{label:"Vrai",noArrow:true})+'<div class="fill"></div></div><div class="br r">'+
+        (s.else?fSeq(s.else,s.endLine,ind+3,{label:"Faux",noArrow:true,lock:s.elseIf}):fSeq([],s.endLine,ind+3,{label:"Faux",noArrow:true,pre:" ".repeat(ind)+"Sinon"}))+
+        '<div class="fill"></div></div></div></div>';
+      case "switch": {
+        const br=s.cases.map((c,k)=>({c,lab:rawLine(c.line).replace(/^\s*cas\s+/i,"").replace(/\s*:.*$/,""),next:(s.cases[k+1]||s.def||{line:s.endLine}).line}));
+        if(s.def) br.push({c:s.def,lab:"Sinon",next:s.endLine});
+        else br.push({c:{body:[]},lab:"Sinon",next:s.endLine,pre:" ".repeat(ind+3)+"Sinon :"});
+        const n=br.length;
+        return '<div class="if">'+fNode("dec",lab,s.line,s.line,s.endLine,nodel)+'<div class="stub"></div><div class="branches" style="grid-template-columns:repeat('+n+',minmax(0,auto))">'+
+          br.map((b,k)=>{ const inl=b.c.body[0]&&b.c.body[0].inl;
+            return '<div class="br '+(k===0?"l":k===n-1?"r":"m")+'">'+fSeq(b.c.body,b.next,ind+6,{label:esc(b.lab),noArrow:true,lock:inl,pre:b.pre})+'<div class="fill"></div></div>'; }).join("")+
+          "</div></div>"; }
+      case "return": return fNode("ret",lab,s.line,s.line,s.line);
+      case "pcall": return fNode("call",lab,s.line,s.line,s.line);
+      case "while": return '<div class="loop">'+fNode("dec",lab,s.line,s.line,s.endLine)+'<span class="lbl out">Faux</span><span class="up"></span>'+fSeq(s.body,s.endLine,ind+3,{label:"Vrai",noArrow:true})+"</div>";
+      case "for": return '<div class="loop for">'+fNode("prep",lab,s.line,s.line,s.endLine)+'<span class="lbl out">fin</span><span class="up"></span>'+fSeq(s.body,s.endLine,ind+3,{noArrow:true})+"</div>";
+      case "repeat": return '<div class="loop rep"><span class="lbl out">Faux</span><span class="up"></span>'+fSeq(s.body,s.untilLine,ind+3,{noArrow:true})+fNode("dec",lab,s.untilLine,s.line,s.untilLine)+"</div>";
+    }
+    return "";
+  }
+  function renderFlow(){
+    if(view!=="flow") return;
+    FL=ta.value.split("\n"); FP=null;
+    if(!ta.value.trim()){ flow.innerHTML='<div class="flow-msg"><strong>Aucun algorithme pour le moment</strong>Commencez un organigramme vide, puis ajoutez vos symboles un par un.<br><button type="button" class="btn primary" id="new-flow">Commencer un organigramme</button></div>'; return; }
+    let c; try{ c=Algo.compile(ta.value); }catch(e){
+      flow.innerHTML='<div class="flow-msg"><strong>L\'organigramme ne peut pas être dessiné</strong>'+(e.algo?"Le texte contient une erreur à la ligne "+e.line+" : "+esc(e.message):"Le texte contient une erreur.")+'<br><button type="button" class="btn primary" id="go-text" data-line="'+(e.line||0)+'">Corriger dans le texte</button></div>'; return; }
+    FP=c.program;
+    const decl=FP.consts.map(k=>rawLine(k.line).replace(/^constantes?\s*/i,"")).concat(FP.vars.map(v=>v.name+" : "+v.type));
+    const subsH=(FP.subs||[]).map(sb=>{
+      const ds=sb.params.map(p=>(p.ref?"Var ":"")+p.name+" : "+p.type).concat(sb.vars.map(v=>v.name+" : "+v.type));
+      return '<div class="fc sub"><div class="data"><b>'+(sb.isFunc?"Fonction":"Procédure")+"</b>"+(ds.length?ds.map(d=>"<code>"+esc(d)+"</code>").join(""):"<span>aucun paramètre</span>")+"</div>"+
+        fNode("term",rawLine(sb.line).replace(/^(fonction|proc[ée]dure)\s+/i,""),sb.line,sb.line,sb.endLine)+
+        fSeq(sb.body,sb.endLine,indentOf(sb.debutLine)+3)+fNode("term",sb.isFunc?"Fin "+sb.name:"Fin "+sb.name,sb.endLine,sb.line,sb.endLine)+"</div>"; }).join("");
+    flow.innerHTML='<div class="fcs"><div class="fc mainfc"><div class="data"><b>Données</b>'+(decl.length?decl.map(d=>"<code>"+esc(d)+"</code>").join(""):"<span>aucune variable</span>")+
+      '<button type="button" class="btn chip" id="add-var">+ Variable</button></div><div class="node term">Début</div>'+
+      fSeq(FP.body,FP.finLine,indentOf(FP.debutLine)+3)+'<div class="node term">Fin</div></div>'+subsH+"</div>";
+    flowMark();
+  }
+  // Le « jeton » qui parcourt les flèches d'un symbole au suivant.
+  let fPrev=null, fTok=0;
+  const calm=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function flowMark(){
+    if(view!=="flow") return;
+    const tok=++fTok, line=bandLine, kind=bandKind;
+    const terms=flow.querySelectorAll(".mainfc>div.node.term");
+    let e=null;
+    if(line) e=flow.querySelector('.node[data-line="'+line+'"]');
+    else if(S.toEnd) e=terms[terms.length-1];
+    if(e||!line) flow.querySelectorAll(".node.cur,.node.bad").forEach(x=>x.classList.remove("cur","bad"));
+    if(!e){ if(!line){ fPrev=null; const ov=flow.querySelector(".travel"); if(ov) ov.innerHTML=""; } return; } // ligne sans symbole (Répéter, Cas …) : le jeton reste où il est
+    const from=fPrev&&fPrev.isConnected?fPrev:terms[0];
+    fPrev=line?e:null;
+    const mark=()=>{ if(tok===fTok&&line) e.classList.add(kind==="err"?"bad":"cur"); };
+    e.scrollIntoView({block:"nearest",inline:"nearest"});
+    if(kind!=="err"&&!calm&&(S.mode==="step"||S.mode==="auto")&&from&&from!==e)
+      travel(from,e,S.mode==="auto"?Math.max(150,Math.min(650,delay()*0.6)):450,mark);
+    else mark();
+  }
+  const isHead=(el,p)=>p&&p.classList.contains("loop")&&!p.classList.contains("rep")&&p.firstElementChild===el;
+  function route(a,b,R,depth){
+    // Fin d'un Pour : on repasse par l'en-tête de la boucle avant d'en sortir.
+    const la=a.parentElement.closest(".loop:not(.rep)");
+    if(depth<8&&la&&!la.contains(b)&&la.firstElementChild!==a){ const h=la.firstElementChild; return route(a,h,R,depth+1).concat(route(h,b,R,depth+1)); }
+    const A=R(a), B=R(b), pa=a.parentElement, pb=b.parentElement, pts=[];
+    let px, py;
+    if(isHead(a,pa)&&!pa.contains(b)){ // sortie de boucle par la droite
+      const L=R(pa); pts.push([A.r,A.cy],[L.r-11,A.cy],[L.r-11,L.b],[L.cx,L.b]); px=L.cx; py=L.b; }
+    else if(pa.classList.contains("rep")&&pa.lastElementChild===a&&pa.contains(b)){ // Répéter : retour par la gauche
+      const L=R(pa); pts.push([A.l,A.cy],[L.l+11,A.cy],[L.l+11,L.t+1],[B.cx,L.t+1],[B.cx,B.t]); }
+    else { pts.push([A.cx,A.b]); px=A.cx; py=A.b; }
+    if(px!==undefined){
+      if(B.t<py&&isHead(b,pb)){ // retour au début de la boucle par la gauche
+        const L=R(pb), y=L.b-17;
+        if(Math.abs(px-L.cx)>1) pts.push([px,y-32],[L.cx,y-32]);
+        pts.push([L.cx,y],[L.l+11,y],[L.l+11,B.cy],[B.l,B.cy]); }
+      else if(pa.classList.contains("if")&&pa.firstElementChild===a){ // Si / Selon : vers une branche
+        const y=A.b+12;
+        if(pa.contains(b)) pts.push([px,y],[B.cx,y],[B.cx,B.t]);
+        else { const brs=[...pa.querySelectorAll(":scope>.branches>.br")], empty=brs.filter(x=>!x.querySelector(".node")), Rr=R(empty.length?empty[empty.length-1]:brs[brs.length-1]);
+          pts.push([px,y],[Rr.cx,y],[Rr.cx,Rr.b],[B.cx,Rr.b],[B.cx,B.t]); } }
+      else { if(Math.abs(px-B.cx)>1){ const y=Math.max(py,B.t-30); pts.push([px,y],[B.cx,y]); } pts.push([B.cx,B.t]); }
+    }
+    return pts;
+  }
+  function pageZoom(){ const h=document.documentElement; return h.currentCSSZoom||parseFloat(getComputedStyle(h).zoom)||1; }
+  function travel(a,b,dur,done){
+    const fc=a.closest(".fc"); if(!fc||b.closest(".fc")!==fc){ done(); return; }
+    const F=fc.getBoundingClientRect();
+    const Z=pageZoom();
+    const R=el=>{ const r=el.getBoundingClientRect(), x=(r.left-F.left)/Z, y=(r.top-F.top)/Z, w=r.width/Z, h=r.height/Z; return {l:x,t:y,r:x+w,b:y+h,cx:x+w/2,cy:y+h/2}; };
+    const pts=route(a,b,R,0);
+    const P=pts.filter((q,k)=>k===0||Math.abs(q[0]-pts[k-1][0])+Math.abs(q[1]-pts[k-1][1])>0.5);
+    let len=0; const at=[0]; for(let k=1;k<P.length;k++){ len+=Math.hypot(P[k][0]-P[k-1][0],P[k][1]-P[k-1][1]); at.push(len); }
+    if(len<1||!Element.prototype.animate){ done(); return; }
+    const NS="http://www.w3.org/2000/svg";
+    let ov=fc.querySelector(".travel");
+    if(!ov){ ov=document.createElementNS(NS,"svg"); ov.setAttribute("class","travel"); ov.setAttribute("aria-hidden","true"); fc.appendChild(ov); }
+    ov.setAttribute("width",fc.scrollWidth); ov.setAttribute("height",fc.scrollHeight);
+    ov.innerHTML="";
+    const pl=document.createElementNS(NS,"polyline"); pl.setAttribute("points",P.map(q=>q[0].toFixed(1)+","+q[1].toFixed(1)).join(" "));
+    pl.style.strokeDasharray=len; pl.style.strokeDashoffset=len;
+    const dot=document.createElementNS(NS,"circle"); dot.setAttribute("r","6");
+    ov.append(pl,dot);
+    pl.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:dur,easing:"ease-in-out",fill:"forwards"});
+    const run=dot.animate(P.map((q,k)=>({transform:"translate("+q[0]+"px,"+q[1]+"px)",offset:at[k]/len})),{duration:dur,easing:"ease-in-out",fill:"forwards"});
+    run.onfinish=()=>{ done();
+      if(pl.isConnected){ const fade=[{opacity:1},{opacity:0}], o={duration:350,fill:"forwards"}; pl.animate(fade,o); dot.animate(fade,o); } };
+  }
+
+  // ---------- Fenêtre d'ajout et de modification ----------
+  const SPEC={
+    write:{name:"Écrire",fields:[["Texte ou valeurs à afficher",'"Bonjour"']],build:v=>["Écrire("+v[0]+")"]},
+    read:{name:"Lire",fields:[["Variable à lire","x"]],build:v=>["Lire("+v[0]+")"]},
+    assign:{name:"Affectation",fields:[["Variable","x"],["Valeur ou calcul","x + 1"]],build:v=>[v[0]+" ← "+v[1]]},
+    if:{name:"Si",fields:[["Condition","x > 0"]],build:v=>["Si "+v[0]+" Alors","FinSi"]},
+    for:{name:"Pour",fields:[["Compteur","i"],["Valeur de départ","1"],["Valeur d'arrivée","10"]],build:v=>["Pour "+v[0]+" de "+v[1]+" à "+v[2]+" Faire","FinPour"]},
+    while:{name:"Tant que",fields:[["Condition","x < 10"]],build:v=>["Tant que "+v[0]+" Faire","FinTantQue"]},
+    pcall:{name:"Appel de procédure",fields:[["Procédure et ses valeurs","Saluer(x)"]],build:v=>[v[0]]},
+    ret:{name:"Retourner",fields:[["Valeur retournée","resultat"]],build:v=>["Retourner "+v[0]]},
+    switch:{name:"Selon",fields:[["Valeur à tester","choix"],["Valeurs des cas, séparées par /","1 / 2 / 3"]],build:v=>["Selon "+v[0]+" Faire"].concat(v[1].split("/").map(x=>x.trim()).filter(Boolean).map(x=>"   Cas "+x+" :"),["   Sinon :","FinSelon"])}
+  };
+  let D=null;
+  function field(i,label,ph,val){ return '<label for="f'+i+'">'+esc(label)+'<input id="f'+i+'" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="'+esc(ph)+'" value="'+esc(val||"").replace(/"/g,"&quot;")+'"></label>'; }
+  function drawDlg(){
+    $("dlg-err").textContent=""; $("dlg-del").hidden=D.mode!=="edit"||D.nodel; $("dlg-types").hidden=D.mode!=="add";
+    $("dlg-ok").textContent=D.mode==="edit"?"Enregistrer":"Ajouter";
+    if(D.mode==="add"){
+      $("dlg-title").textContent="Ajouter un symbole";
+      $("dlg-types").innerHTML=Object.keys(SPEC).map(k=>'<button type="button" class="btn chip" data-type="'+k+'" aria-pressed="'+(k===D.type)+'">'+SPEC[k].name+"</button>").join("");
+      $("dlg-fields").innerHTML=SPEC[D.type].fields.map((f,i)=>field(i,f[0],"Exemple : "+f[1])).join("");
+    } else if(D.mode==="edit"){
+      $("dlg-title").textContent="Modifier le symbole";
+      $("dlg-del").textContent=D.end>D.from?"Supprimer le bloc entier":"Supprimer";
+      $("dlg-fields").innerHTML=field(0,"Instruction (ligne "+D.line+")","",FL[D.line-1].trim());
+    } else {
+      $("dlg-title").textContent="Ajouter une variable";
+      const old=id=>{ const e=$(id); return e?e.value:""; };
+      const keep={name:old("f0"),type:old("f1")||"Entier",n:old("f3"),c:old("f4")}, sh=D.shape||"simple";
+      const opt=(list,cur)=>list.map(o=>"<option"+(o[0]===cur?" selected":"")+' value="'+o[0]+'">'+o[1]+"</option>").join("");
+      $("dlg-fields").innerHTML=
+        '<label for="f2">Forme<select id="f2">'+opt([["simple","Variable simple"],["tableau","Tableau (une rangée de cases)"],["matrice","Matrice (lignes et colonnes)"]],sh)+"</select></label>"+
+        field(0,sh==="simple"?"Nom de la variable":sh==="tableau"?"Nom du tableau":"Nom de la matrice",sh==="simple"?"Exemple : note":sh==="tableau"?"Exemple : T":"Exemple : M",keep.name)+
+        '<label for="f1">'+(sh==="simple"?"Type":"Type des cases")+'<select id="f1">'+opt(["Entier","Réel","Chaîne","Caractère","Booléen"].map(t=>[t,t]),keep.type)+"</select></label>"+
+        (sh==="tableau"?field(3,"Nombre de cases","Exemple : 10 (ou une constante comme N)",keep.n):"")+
+        (sh==="matrice"?field(3,"Nombre de lignes","Exemple : 3",keep.n)+field(4,"Nombre de colonnes","Exemple : 4",keep.c):"");
+      $("f2").addEventListener("change",()=>{ D.shape=$("f2").value; drawDlg(); });
+    }
+    const first=$("f0"); if(first) setTimeout(()=>first.focus(),0);
+  }
+  function openDlg(d){ D=d; $("dlg-fields").innerHTML=""; $("modal").hidden=false; drawDlg(); }
+  function closeDlg(){ D=null; $("modal").hidden=true; }
+  function applyText(lines){
+    const text=lines.join("\n");
+    try{ Algo.compile(text); }catch(e){ $("dlg-err").textContent=e.algo?e.message+(e.hint?" "+e.hint:""):"Cette modification n'est pas valide."; return; }
+    ta.value=text; closeDlg(); onEdit();
+  }
+  $("dlg-types").addEventListener("click",ev=>{ const b=ev.target.closest("[data-type]"); if(b&&D){ D.type=b.dataset.type; drawDlg(); } });
+  $("dlg-cancel").addEventListener("click",closeDlg);
+  $("modal").addEventListener("mousedown",ev=>{ if(ev.target===$("modal")) closeDlg(); });
+  document.addEventListener("keydown",ev=>{ if(ev.key==="Escape"&&D) closeDlg(); });
+  $("dlg-del").addEventListener("click",()=>{ const L=ta.value.split("\n"); L.splice(D.from-1,D.end-D.from+1); applyText(L); });
+  $("dlg").addEventListener("submit",ev=>{
+    ev.preventDefault(); if(!D) return;
+    const vals=[...$("dlg-fields").querySelectorAll("input,select")].map(i=>i.value.trim());
+    if(vals.some(v=>!v)){ $("dlg-err").textContent="Remplissez tous les champs."; return; }
+    const L=ta.value.split("\n");
+    if(D.mode==="add"){ const ind=" ".repeat(D.ind); L.splice(D.at-1,0,...(D.pre?[D.pre]:[]).concat(SPEC[D.type].build(vals).map(l=>ind+l))); }
+    else if(D.mode==="edit"){ L[D.line-1]=L[D.line-1].match(/^\s*/)[0]+vals[0]; }
+    else { const g=id=>$(id).value.trim(), sh=g("f2"), bound=x=>/\.\./.test(x)?x.replace(/\s+/g,""):"1.."+x;
+      const ty=sh==="simple"?g("f1"):"Tableau["+bound(g("f3"))+(sh==="matrice"?", "+bound(g("f4")):"")+"] de "+g("f1");
+      const ind=" ".repeat(indentOf(FP.debutLine)+3), decl=ind+g("f0")+" : "+ty;
+      if(FP.varsLine){ const last=Math.max(FP.varsLine,...FP.vars.map(v=>v.line)); L.splice(last,0,decl); }
+      else L.splice(FP.debutLine-1,0," ".repeat(indentOf(FP.debutLine))+"Variables",decl); }
+    applyText(L);
+  });
+  flow.addEventListener("click",ev=>{
+    const t=ev.target;
+    if(t.id==="new-flow"){ ta.value="Algorithme Mon_algorithme\nVariables\nDébut\nFin"; onEdit(); return; }
+    if(t.id==="go-text"){ const l=+t.dataset.line; setView("text"); if(l) setBand(l,"err"); ta.focus(); return; }
+    if(t.id==="add-var"){ openDlg({mode:"var"}); return; }
+    const a=t.closest(".add"); if(a){ openDlg({mode:"add",type:"write",at:+a.dataset.at,ind:+a.dataset.ind,pre:a.dataset.pre}); return; }
+    const n=t.closest(".node[data-line]"); if(n) openDlg({mode:"edit",line:+n.dataset.line,from:+n.dataset.from,end:+n.dataset.end,nodel:!!n.dataset.nodel});
+  });
+
+  // ---------- Démarrage ----------
+  const sel=$("examples");
+  sel.innerHTML='<option value="">Choisir un exemple…</option>'+EXAMPLES.map((e,i)=>'<option value="'+i+'">'+esc(e[0])+"</option>").join("");
+  function loadCode(text){ if(S.gen) stop(true); ta.value=text; cons.innerHTML=""; S.rt=null; S.prev={}; clearError(); paint(); save(); renderFlow(); intro(); refresh(); status("idle","Prêt"); ta.scrollTop=0; sync(); }
+  sel.addEventListener("change",()=>{ if(sel.value==="") return; const t=EXAMPLES[+sel.value][1]; sel.value=""; loadCode(t); if(window.desktop) setCur(null); });
+  $("open").addEventListener("click",()=>$("file").click());
+  $("file").addEventListener("change",()=>{ const f=$("file").files[0]; $("file").value=""; if(!f) return;
+    f.text().then(t=>loadCode(t.replace(/\r\n?/g,"\n"))).catch(()=>sysLine("Impossible de lire ce fichier.","bad")); });
+  function download(){
+    const m=/^\s*algorithme\s+([^\s\/]+)/im.exec(ta.value);
+    const name=(m?m[1]:"algorithme").replace(/[\\\/:*?"<>|]/g,"_")+".algo";
+    const url=URL.createObjectURL(new Blob([ta.value.replace(/\n/g,"\r\n")],{type:"text/plain;charset=utf-8"}));
+    const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  // Version de bureau : vraies boîtes de dialogue Windows, Enregistrer réécrit le fichier ouvert
+  const DK=window.desktop||null; let curPath=null;
+  const fileOf=p=>p.split(/[\\\/]/).pop();
+  const baseName=()=>{ const m=/^\s*algorithme\s+([^\s\/]+)/im.exec(ta.value); return (m?m[1]:"algorithme").replace(/[\\\/:*?"<>|]/g,"_")+".algo"; };
+  function setCur(p){ curPath=p||null; if(DK) DK.setTitle(curPath?fileOf(curPath):""); }
+  async function deskSave(asNew){ try{ const p=await DK.saveFile({path:asNew?null:curPath,name:baseName(),text:ta.value.replace(/\n/g,"\r\n")}); if(p){ setCur(p); status("idle","Enregistré : "+fileOf(p)); } }catch(e){ sysLine("Impossible d'enregistrer ce fichier.","bad"); } }
+  async function deskOpen(){ try{ const r=await DK.openFile(); if(r){ loadCode(r.text.replace(/\r\n?/g,"\n")); setCur(r.path); } }catch(e){ sysLine("Impossible de lire ce fichier.","bad"); } }
+  if(DK){
+    $("open").addEventListener("click",e=>{ e.stopImmediatePropagation(); deskOpen(); },true);
+    DK.onOpenFile(r=>{ loadCode(r.text.replace(/\r\n?/g,"\n")); setCur(r.path); });
+    DK.onMenu(cmd=>{ if(cmd==="open") deskOpen(); else if(cmd==="save") deskSave(false); else if(cmd==="saveas") deskSave(true);
+      else if(cmd==="new"){ loadCode("Algorithme Nouveau\nVariables\n   x : Entier\nDébut\n   \nFin"); setCur(null); }
+      else if(cmd==="run") $("run").click(); else if(cmd==="step") $("step").click(); else if(cmd==="stop") $("stop").click(); });
+  }
+  $("save").addEventListener("click",()=>DK?deskSave(false):download());
+  document.addEventListener("keydown",ev=>{ const k=ev.key.toLowerCase(), c=ev.ctrlKey||ev.metaKey;
+    if(c&&k==="s"){ ev.preventDefault(); if(DK) deskSave(ev.shiftKey); else if(!ev.shiftKey) download(); }
+    if(DK&&c&&!ev.shiftKey&&k==="o"){ ev.preventDefault(); deskOpen(); } });
+  function intro(){ sysLine("Les messages de votre algorithme s'afficheront ici. Cliquez sur Exécuter, ou sur Pas à pas pour avancer une instruction à la fois."); }
+  let saved=null; try{ saved=localStorage.getItem("algo-code"); }catch(e){}
+  ta.value=saved&&saved.trim()?saved:EXAMPLES[1][1];
+  paint(); intro(); refresh(); buttons();
+  let pref="text"; try{ pref=localStorage.getItem("algo-view")||"text"; }catch(e){}
+  setView(pref==="flow"?"flow":"text");
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(sync);
+})();
+// ---------- Taille des fenêtres ----------
+(function(){
+  const $=id=>document.getElementById(id), main=$("main"), colR=$("colR"), pMem=$("pMem");
+  const KEY="algo-layout";
+  let L={}; try{ L=JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){}
+  const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(L)); }catch(e){} };
+  const refresh=()=>window.dispatchEvent(new Event("resize"));
+  const ICON={min:'<svg viewBox="0 0 14 14"><path d="M3 10h8"/></svg>',
+    open:'<svg viewBox="0 0 14 14"><path d="M3 5l4 4 4-4"/></svg>',
+    max:'<svg viewBox="0 0 14 14"><rect x="2.5" y="2.5" width="9" height="9" rx="1"/></svg>',
+    restore:'<svg viewBox="0 0 14 14"><rect x="2.5" y="4.5" width="7" height="7" rx="1"/><path d="M5 4.5V2.5h6.5V9h-2"/></svg>'};
+  function setLeft(f){ f=Math.min(.8,Math.max(.2,f)); L.lf=f; main.style.setProperty("--lf",f+"fr"); main.style.setProperty("--rf",(1-f)+"fr"); }
+  function setMem(h){ const max=colR.clientHeight-80; h=Math.round(Math.min(Math.max(70,h),Math.max(70,max))); L.mh=h; pMem.style.flex="0 0 "+h+"px"; pMem.style.maxHeight="none"; }
+  function resetLeft(){ delete L.lf; main.style.removeProperty("--lf"); main.style.removeProperty("--rf"); save(); refresh(); }
+  function resetMem(){ delete L.mh; pMem.style.flex=""; pMem.style.maxHeight=""; save(); refresh(); }
+  if(L.lf) setLeft(L.lf);
+  if(L.mh) setMem(L.mh);
+
+  function drag(el,cls,move){
+    el.addEventListener("pointerdown",e=>{ if(e.button!==0) return; e.preventDefault(); el.setPointerCapture(e.pointerId);
+      el.classList.add("drag"); document.body.classList.add("resizing",cls);
+      const mv=ev=>{ move(ev); refresh(); };
+      const up=()=>{ el.classList.remove("drag"); document.body.classList.remove("resizing",cls); el.removeEventListener("pointermove",mv); el.removeEventListener("pointerup",up); el.removeEventListener("pointercancel",up); save(); refresh(); };
+      el.addEventListener("pointermove",mv); el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up); });
+  }
+  const V=$("splitV"), H=$("splitH");
+  drag(V,"rv",e=>{ const r=main.getBoundingClientRect(), cs=getComputedStyle(main), pl=parseFloat(cs.paddingLeft), pr=parseFloat(cs.paddingRight);
+    setLeft((e.clientX-r.left-pl-7)/(r.width-pl-pr-14)); });
+  const Zf=()=>document.documentElement.currentCSSZoom||parseFloat(getComputedStyle(document.documentElement).zoom)||1;
+  drag(H,"rh",e=>{ const r=colR.getBoundingClientRect(); setMem((r.bottom-e.clientY)/Zf()-6); });
+  V.addEventListener("dblclick",resetLeft); H.addEventListener("dblclick",resetMem);
+  V.addEventListener("keydown",e=>{ const d=e.key==="ArrowLeft"?-.03:e.key==="ArrowRight"?.03:0; if(e.key==="Home"||e.key==="Enter"){ e.preventDefault(); resetLeft(); return; }
+    if(d){ e.preventDefault(); setLeft((L.lf||1.1/2.1)+d); save(); refresh(); } });
+  H.addEventListener("keydown",e=>{ const d=e.key==="ArrowUp"?25:e.key==="ArrowDown"?-25:0; if(e.key==="Home"||e.key==="Enter"){ e.preventDefault(); resetMem(); return; }
+    if(d){ e.preventDefault(); setMem((L.mh||pMem.getBoundingClientRect().height/Zf())+d); save(); refresh(); } });
+  window.addEventListener("resize",()=>{ if(L.mh&&!document.body.classList.contains("resizing")){ const max=colR.clientHeight-80; if(max>70&&L.mh>max) pMem.style.flex="0 0 "+max+"px"; } });
+
+  // Zoom de la page : 80 % par défaut sur ordinateur
+  const ZS=[.5,.6,.67,.75,.8,.9,1,1.1,1.25,1.5];
+  function applyZoom(z){ if(z) document.documentElement.style.zoom=z; else document.documentElement.style.removeProperty("zoom");
+    $("zoom-val").textContent=Math.round(Zf()*100)+" %"; refresh(); }
+  function stepZoom(dir){ const z=Zf(); let k=ZS.findIndex(x=>x>=z-0.001); if(k<0) k=ZS.length-1;
+    if(dir>0) k=ZS[k]>z+0.001?k:Math.min(ZS.length-1,k+1); else k=Math.max(0,ZS[k]<z-0.001?k:k-1);
+    L.zoom=ZS[k]; save(); applyZoom(L.zoom); }
+  $("zoom-in").addEventListener("click",()=>stepZoom(1));
+  $("zoom-out").addEventListener("click",()=>stepZoom(-1));
+  $("zoom-val").addEventListener("click",()=>{ delete L.zoom; save(); applyZoom(null); });
+  applyZoom(L.zoom||null);
+  window.addEventListener("resize",()=>{ const t=Math.round(Zf()*100)+" %"; if($("zoom-val").textContent!==t) $("zoom-val").textContent=t; });
+
+  // Boutons Réduire / Agrandir de chaque fenêtre
+  L.min=L.min||{};
+  function paintBtns(){
+    document.querySelectorAll(".win").forEach(w=>{ const p=w.closest(".panel"), n=w.dataset.name, mn=p.classList.contains("collapsed"), mx=p.classList.contains("maxed");
+      const bm=w.querySelector('[data-act="min"]'), bx=w.querySelector('[data-act="max"]');
+      bm.innerHTML=mn?ICON.open:ICON.min; bm.title=mn?"Déplier « "+n+" »":"Réduire « "+n+" »"; bm.setAttribute("aria-label",bm.title); bm.hidden=mx;
+      bx.innerHTML=mx?ICON.restore:ICON.max; bx.title=mx?"Restaurer la taille (Échap)":"Agrandir « "+n+" »"; bx.setAttribute("aria-label",bx.title); bx.setAttribute("aria-pressed",mx); });
+  }
+  function unmax(){ main.classList.remove("maxed"); document.querySelectorAll(".maxed,.has-max").forEach(x=>x.classList.remove("maxed","has-max")); }
+  document.querySelectorAll(".win").forEach(w=>{ const p=w.closest(".panel");
+    if(L.min[p.id]) p.classList.add("collapsed");
+    w.addEventListener("click",e=>{ const b=e.target.closest(".wbtn"); if(!b) return; e.stopPropagation();
+      if(b.dataset.act==="min"){ p.classList.toggle("collapsed"); L.min[p.id]=p.classList.contains("collapsed"); save(); }
+      else if(p.classList.contains("maxed")) unmax();
+      else { unmax(); p.classList.remove("collapsed"); L.min[p.id]=false; save(); main.classList.add("maxed"); p.classList.add("maxed"); p.closest(".col").classList.add("has-max"); }
+      paintBtns(); refresh(); });
+  });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&main.classList.contains("maxed")&&document.getElementById("modal").hidden&&!document.querySelector("details[open]")){ unmax(); paintBtns(); refresh(); } });
+  paintBtns();
+})();
+(function(){
+  const aide=document.querySelector("details");
+  if(!aide) return;
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&aide.open){ aide.open=false; aide.querySelector("summary").focus(); } });
+  document.addEventListener("pointerdown",e=>{ if(aide.open&&!aide.contains(e.target)) aide.open=false; });
+})();
+</script>
+</body>
+</html>
