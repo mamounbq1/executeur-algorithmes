@@ -5,6 +5,7 @@ const fs = require("fs");
 
 const APP_NAME = "Exécuteur d'algorithmes";
 const SITE = "https://executeur-algorithmes.vercel.app/";
+const PH_HOST = "https://eu.i.posthog.com";   // statistiques anonymes (voir confidentialite.html sur le site)
 const IS_MAC = process.platform === "darwin";
 let win = null;
 
@@ -98,6 +99,7 @@ function buildMenu() {
     ]},
     { label: "Aide", submenu: [
       { label: "Site web", click: () => shell.openExternal(SITE) },
+      { label: "Statistiques anonymes…", click: send("stats") },
       { label: "À propos", click: () => dialog.showMessageBox(win, {
         type: "info", title: "À propos", message: APP_NAME,
         detail: "Version " + app.getVersion() + "\nÉcrire, exécuter pas à pas et visualiser des algorithmes en français." }) }
@@ -131,6 +133,15 @@ ipcMain.handle("save-file", async (_e, { path: p, name, text }) => {
   }
   fs.writeFileSync(p, String(text), "utf8");
   return p;
+});
+
+// Statistiques anonymes : la page ne peut rien envoyer sur Internet (CSP) ; ce relais n'envoie qu'à PostHog
+ipcMain.on("track", (_e, body) => {
+  if (!body || typeof body !== "object" || !/^phc_[A-Za-z0-9]{20,}$/.test(String(body.api_key)) || typeof body.event !== "string") return;
+  body.properties = Object.assign({}, body.properties, {
+    version: app.getVersion(), $os: IS_MAC ? "Mac OS X" : "Windows", $os_version: process.getSystemVersion(), arch: process.arch
+  });
+  fetch(PH_HOST + "/i/v0/e/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
 });
 
 ipcMain.on("set-title", (_e, name) => {

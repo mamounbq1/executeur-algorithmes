@@ -11,3 +11,6 @@ site/telechargement/
 
 # Vidéos promotionnelles (fichiers lourds)
 reels/
+
+# Clés locales
+TKN.txt

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confidentialité — Exécuteur d'algorithmes</title>
+<meta name="description" content="Quelles statistiques anonymes l'Exécuteur d'algorithmes mesure, pourquoi, et comment les refuser.">
+<link rel="icon" href="img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f5f4;--surface:#fff;--ink:#16292a;--muted:#566b6c;--line:#d3dedc;--accent:#0f7173;--accent-ink:#fff;--ok:#1d7a3e;
+  --display:"Bricolage Grotesque","IBM Plex Sans",system-ui,sans-serif;--body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0c1819;--surface:#132526;--ink:#e3eeec;--muted:#93aaa8;--line:#27403f;--accent:#43b9b3;--accent-ink:#06201f;--ok:#6fd38f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65}
+a{color:var(--accent)}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+.top{display:flex;align-items:center;gap:10px;padding:18px 0}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+.brand img{width:30px;height:30px}
+h1{font-family:var(--display);font-size:36px;line-height:1.1;margin:22px 0 10px}
+h2{font-family:var(--display);font-size:22px;margin:34px 0 8px}
+ul{padding-left:22px}
+li{margin:4px 0}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:14px}
+.btn{display:inline-block;background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer}
+#etat{font-weight:600}
+#etat.on{color:var(--ok)}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="brand" href="./"><img src="img/icon.png" alt="">Exécuteur d'algorithmes</a></header>
+
+  <h1>Confidentialité</h1>
+  <p>L'Exécuteur d'algorithmes est gratuit. Pour savoir s'il est utile et l'améliorer, il mesure quelques <b>statistiques anonymes</b>. Vous pouvez les refuser à tout moment.</p>
+
+  <h2>Ce qui est mesuré</h2>
+  <ul>
+    <li><b>Sur ce site</b> : pages visitées, temps passé, site d'où vous venez (par exemple Instagram ou Google), pays, type d'appareil et de navigateur, clics sur « Télécharger ».</li>
+    <li><b>Dans l'application</b> (en ligne et sur ordinateur) : ouverture, première installation, minutes d'utilisation active, fonctions utilisées (exécuter, pas à pas, organigramme, table de trace, exemples, fichiers) et version.</li>
+  </ul>
+
+  <h2>Ce qui n'est jamais mesuré</h2>
+  <ul>
+    <li>Le <b>contenu de vos algorithmes</b> et de vos fichiers .algo.</li>
+    <li>Votre nom, votre adresse e-mail ou toute autre donnée qui vous identifie. Aucun compte n'est demandé.</li>
+    <li>Aucun cookie publicitaire, aucune revente, aucun enregistrement de l'écran.</li>
+  </ul>
+
+  <h2>Comment</h2>
+  <p>Un identifiant au hasard, sans lien avec votre identité, est gardé dans votre navigateur ou dans l'application pour compter les utilisateurs une seule fois. Les statistiques sont traitées par <a href="https://posthog.com/privacy" target="_blank" rel="noopener">PostHog</a>, avec des serveurs dans l'Union européenne. Votre adresse IP sert seulement à déduire le pays et la ville ; elle n'est pas montrée dans les statistiques. Le site utilise aussi Vercel Analytics, une mesure de visites sans cookie.</p>
+
+  <h2>Refuser</h2>
+  <div class="box">
+    <p style="margin:0 0 10px">Sur ce navigateur (site et application en ligne) : <span id="etat">…</span></p>
+    <button class="btn" id="bascule" type="button">…</button>
+    <p style="margin:12px 0 0"><small>Dans l'application de bureau : menu <b>Aide › Statistiques anonymes…</b>, ou le bouton « Refuser » au premier lancement.</small></p>
+  </div>
+
+  <h2>Contact</h2>
+  <p>Une question ? Ouvrez un sujet sur <a href="https://github.com/mamounbq1/executeur-algorithmes/issues" target="_blank" rel="noopener">GitHub</a>.</p>
+</div>
+<script>
+(function(){
+  var etat=document.getElementById("etat"), b=document.getElementById("bascule");
+  function get(){ try{ return localStorage.getItem("algo-stats")!=="non"; }catch(e){ return true; } }
+  function paint(){ var on=get(); etat.textContent=on?"statistiques anonymes activées":"statistiques désactivées"; etat.className=on?"on":""; b.textContent=on?"Refuser les statistiques":"Réactiver les statistiques"; }
+  b.addEventListener("click",function(){ try{ localStorage.setItem("algo-stats",get()?"non":"oui"); localStorage.setItem("algo-stats-info","vu");
+    if(!get()){ for(var i=localStorage.length-1;i>=0;i--){ var k=localStorage.key(i); if(/^ph_/.test(k)) localStorage.removeItem(k); } } }catch(e){} paint(); });
+  paint();
+})();
+</script>
+</body>
+</html>

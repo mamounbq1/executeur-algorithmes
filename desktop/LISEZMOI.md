@@ -20,7 +20,7 @@ Les 4 versions sont fabriquées automatiquement par GitHub (workflow `.github/wo
 
 1. Changer `"version"` dans `package.json` (par exemple `1.0.2`).
 2. Dans `../site/index.html`, mettre à jour le numéro de version (texte « Version 1.0.1 » et pied de page). Les liens de téléchargement n'ont pas à changer : ils pointent toujours vers la dernière Release.
-3. Recopier la page HTML dans `../site/app/index.html` pour la version en ligne.
+3. Recopier la page HTML dans `../site/app/index.html` pour la version en ligne, en gardant juste avant `</head>` les 3 lignes « Statistiques de visite (Vercel Web Analytics) ». Les statistiques anonymes PostHog (clé `phc_…`) sont déjà dans la page (voir `../site/confidentialite.html`) ; les envois de l'application de bureau passent par `main.js`.
 4. Publier (depuis le dossier du projet) :
 
 ```

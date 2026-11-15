@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld("desktop", {
   saveFile: opts => ipcRenderer.invoke("save-file", opts),
   setTitle: name => ipcRenderer.send("set-title", String(name || "")),
   onOpenFile: cb => ipcRenderer.on("open-file", (_e, r) => cb(r)),
-  onMenu: cb => ipcRenderer.on("menu", (_e, cmd) => cb(cmd))
+  onMenu: cb => ipcRenderer.on("menu", (_e, cmd) => cb(cmd)),
+  track: body => ipcRenderer.send("track", body)
 });

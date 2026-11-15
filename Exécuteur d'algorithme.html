@@ -1956,7 +1956,8 @@ Fin`]
     DK.onOpenFile(r=>{ loadCode(r.text.replace(/\r\n?/g,"\n")); setCur(r.path); });
     DK.onMenu(cmd=>{ if(cmd==="open") deskOpen(); else if(cmd==="save") deskSave(false); else if(cmd==="saveas") deskSave(true);
       else if(cmd==="new"){ loadCode("Algorithme Nouveau\nVariables\n   x : Entier\nDébut\n   \nFin"); setCur(null); }
-      else if(cmd==="run") $("run").click(); else if(cmd==="step") $("step").click(); else if(cmd==="stop") $("stop").click(); });
+      else if(cmd==="run") $("run").click(); else if(cmd==="step") $("step").click(); else if(cmd==="stop") $("stop").click();
+      else if(cmd==="stats"&&window.algoStats) window.algoStats.choisir(); });
   }
   $("save").addEventListener("click",()=>DK?deskSave(false):download());
   document.addEventListener("keydown",ev=>{ const k=ev.key.toLowerCase(), c=ev.ctrlKey||ev.metaKey;
@@ -2045,6 +2046,67 @@ Fin`]
   if(!aide) return;
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&aide.open){ aide.open=false; aide.querySelector("summary").focus(); } });
   document.addEventListener("pointerdown",e=>{ if(aide.open&&!aide.contains(e.target)) aide.open=false; });
+})();
+</script>
+<script>
+// ===== Statistiques anonymes d'utilisation (PostHog) =====
+// Jamais le code écrit ni de donnée personnelle : seulement « ouverte », minutes actives, fonctions utilisées, système et pays.
+// Désactivable : bandeau au premier lancement, menu Aide › Statistiques anonymes (bureau), page confidentialite.html (en ligne).
+(function(){
+  const PH_KEY="phc_Bomhs7zGdFXTDrtp4ypcLB96SaGMdVrYmespCWH7hDCt", PH_HOST="https://eu.i.posthog.com", VERSION="1.0.2";
+  if(!/^phc_[A-Za-z0-9]{20,}$/.test(PH_KEY) || navigator.webdriver) return;     // pas de clé, ou robot : rien n'est envoyé
+  const DK=window.desktop||null;
+  const get=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } }, put=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
+  const PRIV="https://executeur-algorithmes.vercel.app/confidentialite.html";
+  let on=get("algo-stats")!=="non";
+  window.algoStats={
+    actif:()=>on,
+    choisir(){ if(on){ if(confirm("Les statistiques anonymes d'utilisation sont activées.\nElles aident à améliorer l'application (aucune donnée personnelle, jamais votre code).\n\nLes désactiver ?")){ put("algo-stats","non"); on=false; } }
+               else if(confirm("Les statistiques anonymes sont désactivées. Les réactiver ?")){ put("algo-stats","oui"); location.reload(); } }
+  };
+  if(!on) return;
+
+  let id=get("algo-id"); const first=!id;
+  if(!id){ try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(/^ph_.*_posthog$/.test(k)){ const d=JSON.parse(localStorage.getItem(k)); if(d&&d.distinct_id){ id=d.distinct_id; break; } } } }catch(e){}
+    id=id||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()); put("algo-id",id); }
+  const plateforme=DK?(/Mac/i.test(navigator.platform)?"mac":"windows"):"web";
+  const session=crypto.randomUUID?crypto.randomUUID():String(Date.now()), t0=Date.now();
+  function send(event,props){
+    if(!on) return;
+    const body={api_key:PH_KEY,event,distinct_id:id,timestamp:new Date().toISOString(),
+      properties:Object.assign({plateforme,version:VERSION,session,$process_person_profile:false,
+        $current_url:DK?"app://bureau":location.href,$screen_width:screen.width,$screen_height:screen.height,langue:navigator.language},props||{})};
+    if(DK&&DK.track) DK.track(body);
+    else fetch(PH_HOST+"/i/v0/e/",{method:"POST",mode:"no-cors",keepalive:true,headers:{"Content-Type":"text/plain"},body:JSON.stringify(body)}).catch(()=>{});
+  }
+  if(first) send(DK?"app_installee":"app_premiere_utilisation");
+  send("app_ouverte",{nouvel_utilisateur:first});
+
+  // Temps d'utilisation réel : une minute comptée seulement si la fenêtre est visible et utilisée depuis moins de 2 min
+  let last=Date.now(), minutes=0;
+  ["pointerdown","keydown","wheel","input"].forEach(ev=>addEventListener(ev,()=>{ last=Date.now(); },{passive:true,capture:true}));
+  setInterval(()=>{ if(document.visibilityState==="visible"&&Date.now()-last<120000){ minutes++; send("app_minute_active",{minute:minutes}); } },60000);
+  addEventListener("pagehide",()=>send("app_fermee",{minutes_actives:minutes,minutes_ouverte:Math.round((Date.now()-t0)/60000)}));
+
+  // Fonctions utilisées (au plus une fois toutes les 15 s chacune)
+  const seen={}, feat=(n,p)=>{ const t=Date.now(); if(seen[n]&&t-seen[n]<15000) return; seen[n]=t; send("fonction_utilisee",Object.assign({fonction:n},p||{})); };
+  const MAP={run:"executer",step:"pas_a_pas",auto:"lecture_auto","view-flow":"organigramme","tab-trace":"table_de_trace",open:"fichier_ouvrir",save:"fichier_enregistrer","new-flow":"organigramme_nouveau"};
+  document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("button[id]"); if(b&&MAP[b.id]) feat(MAP[b.id]); },true);
+  document.addEventListener("change",e=>{ const ex=e.target; if(ex&&ex.id==="examples"){ const o=ex.options[ex.selectedIndex]; if(o&&o.value!=="") feat("exemple",{exemple:o.textContent}); } },true);
+  const eb=document.getElementById("errbox");
+  if(eb) new MutationObserver(()=>{ if(eb.textContent.trim()) feat("erreur_affichee"); }).observe(eb,{childList:true,subtree:true,characterData:true});
+
+  // Information au premier lancement
+  if(get("algo-stats-info")!=="vu"){
+    const d=document.createElement("div");
+    d.setAttribute("role","status");
+    d.style.cssText="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:min(420px,calc(100vw - 32px));background:#0f2e2f;color:#e3eeec;border-radius:12px;padding:14px 16px;font:14px/1.45 'IBM Plex Sans',system-ui,sans-serif;box-shadow:0 12px 40px -10px #0008";
+    d.innerHTML='📊 Des <b>statistiques anonymes</b> d\'utilisation aident à améliorer l\'application : aucune donnée personnelle, jamais votre code. <a href="'+PRIV+'" target="_blank" rel="noopener" style="color:#5fd0c9">En savoir plus</a>'+
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button type="button" data-r="non" style="background:transparent;color:#e3eeec;border:1px solid #ffffff55;border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer">Refuser</button><button type="button" data-r="ok" style="background:#43b9b3;color:#06201f;border:0;border-radius:8px;padding:6px 14px;font:inherit;font-weight:600;cursor:pointer">D\'accord</button></div>';
+    d.addEventListener("click",e=>{ const r=e.target.getAttribute&&e.target.getAttribute("data-r"); if(!r) return;
+      put("algo-stats-info","vu"); if(r==="non"){ send("stats_refusees"); put("algo-stats","non"); on=false; } d.remove(); });
+    (document.body||document.documentElement).appendChild(d);
+  }
 })();
 </script>
 </body>

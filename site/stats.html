@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Statistiques — Exécuteur d'algorithmes</title>
+<link rel="icon" href="img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f1f5f4; --surface:#ffffff; --ink:#16292a; --muted:#566b6c; --line:#d3dedc;
+  --accent:#0f7173; --accent-soft:#e1efed; --orange:#f2a541;
+  --display:"Bricolage Grotesque","IBM Plex Sans",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1819; --surface:#132526; --ink:#e3eeec; --muted:#93aaa8; --line:#27403f;
+    --accent:#43b9b3; --accent-soft:#1a3534;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px 60px}
+.top{display:flex;align-items:center;gap:10px;padding:18px 0}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+.brand img{width:30px;height:30px}
+.top .upd{margin-left:auto;font-size:13px;color:var(--muted)}
+h1{font-family:var(--display);font-size:34px;line-height:1.1;margin:18px 0 6px;letter-spacing:-.01em}
+.lead{color:var(--muted);margin:0 0 26px}
+h2{font-family:var(--display);font-size:21px;margin:34px 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.kpi .l{font-size:13px;color:var(--muted);font-weight:500}
+.kpi .v{font-family:var(--display);font-size:38px;font-weight:700;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:13px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 18px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .n{font-weight:600}
+.row .c{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.bar{grid-column:1 / -1;height:8px;border-radius:99px;background:var(--accent-soft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:10px 6px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--muted);font-weight:600}
+th.c{text-align:right}
+td.c{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.tablewrap{overflow-x:auto}
+.visits{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.visits p{margin:0 0 12px}
+.btn{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;padding:10px 18px;border-radius:10px}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .btn{color:#06201f} }
+.err{color:#b3261e}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="img/icon.png" alt="">Exécuteur d'algorithmes</a>
+    <span class="upd" id="upd">Chargement…</span>
+  </header>
+
+  <h1>Statistiques</h1>
+  <p class="lead">Téléchargements comptés en direct par GitHub · visiteurs mesurés par Vercel Analytics.</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="l">Téléchargements au total</div><div class="v" id="k-total">–</div><div class="s" id="k-total-s">&nbsp;</div></div>
+    <div class="kpi"><div class="l">Dernière version</div><div class="v" id="k-last">–</div><div class="s" id="k-last-s">&nbsp;</div></div>
+    <div class="kpi"><div class="l">Windows</div><div class="v" id="k-win">–</div><div class="s">.exe, toutes versions</div></div>
+    <div class="kpi"><div class="l">Mac</div><div class="v" id="k-mac">–</div><div class="s">.dmg, toutes versions</div></div>
+  </div>
+
+  <h2>Par système (toutes versions)</h2>
+  <div class="card" id="plats"></div>
+
+  <h2>Par version</h2>
+  <div class="card tablewrap"><table><thead><tr><th>Version</th><th>Publiée le</th><th class="c">Téléchargements</th></tr></thead><tbody id="vers"></tbody></table></div>
+
+  <h2>Visiteurs du site</h2>
+  <div class="visits">
+    <p>Visiteurs, pays et villes, provenance (Instagram, TikTok, Google…), temps passé, clics sur « Télécharger », installations, utilisateurs actifs de l'application et minutes d'utilisation : tableau de bord PostHog.</p>
+    <a class="btn" href="https://eu.posthog.com/" target="_blank" rel="noopener">Ouvrir le tableau de bord PostHog</a>
+    <a class="btn" style="background:transparent;color:var(--accent);border:1px solid var(--line)" href="https://vercel.com/belqasims-projects/executeur-algorithmes/analytics" target="_blank" rel="noopener">Visites sur Vercel</a>
+    <p class="note">Statistiques anonymes, sans donnée personnelle ni code des utilisateurs (voir <a href="confidentialite.html">confidentialité</a>).</p>
+  </div>
+</div>
+<script>
+const REPO="mamounbq1/executeur-algorithmes";
+const PLAT=[["win-x64",/Windows-x64|Setup-.*\.exe$/i,"Windows · 64 bits"],["win-ia32",/Windows-ia32/i,"Windows · 32 bits"],
+            ["mac-arm64",/Mac-arm64/i,"Mac · Apple Silicon"],["mac-x64",/Mac-x64/i,"Mac · Intel"]];
+const fmt=n=>n.toLocaleString("fr-FR");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function load(){
+  try{
+    const r=await fetch("https://api.github.com/repos/"+REPO+"/releases?per_page=100",{headers:{Accept:"application/vnd.github+json"}});
+    if(!r.ok) throw new Error(r.status===403?"limite de requêtes GitHub atteinte, réessayez dans une heure":"GitHub a répondu "+r.status);
+    const rel=(await r.json()).filter(x=>!x.draft);
+    const per={}; PLAT.forEach(p=>per[p[0]]=0);
+    let total=0;
+    const rows=rel.map(x=>{
+      let n=0;
+      for(const a of x.assets){ n+=a.download_count; const p=PLAT.find(p=>p[1].test(a.name)); if(p) per[p[0]]+=a.download_count; }
+      total+=n; return [x.tag_name,x.published_at,n];
+    });
+    document.getElementById("k-total").textContent=fmt(total);
+    document.getElementById("k-total-s").textContent=rel.length+" version"+(rel.length>1?"s":"")+" publiée"+(rel.length>1?"s":"");
+    if(rows[0]){ document.getElementById("k-last").textContent=fmt(rows[0][2]); document.getElementById("k-last-s").textContent=rows[0][0]; }
+    document.getElementById("k-win").textContent=fmt(per["win-x64"]+per["win-ia32"]);
+    document.getElementById("k-mac").textContent=fmt(per["mac-arm64"]+per["mac-x64"]);
+    const max=Math.max(1,...Object.values(per));
+    document.getElementById("plats").innerHTML=PLAT.map(p=>'<div class="row"><span class="n">'+p[2]+'</span><span class="c">'+fmt(per[p[0]])+'</span><div class="bar"><i style="width:'+(per[p[0]]/max*100)+'%"></i></div></div>').join("");
+    document.getElementById("vers").innerHTML=rows.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+new Date(x[1]).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})+'</td><td class="c">'+fmt(x[2])+'</td></tr>').join("");
+    document.getElementById("upd").textContent="Mis à jour à "+new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+  }catch(e){
+    document.getElementById("upd").innerHTML='<span class="err">Erreur : '+esc(e.message)+'</span>';
+  }
+}
+load(); setInterval(load,5*60*1000);
+</script>
+</body>
+</html>
