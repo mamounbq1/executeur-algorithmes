@@ -1,0 +1,52 @@
+# Fabrique les 4 versions de bureau (Windows 64/32 bits, Mac Intel/Apple Silicon)
+# et les ajoute à la Release GitHub dès qu'elle est publiée.
+name: Version de bureau
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release à compléter (ex. v1.0.1)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            cmd: npx electron-builder --win nsis --x64 --publish never && npx electron-builder --win nsis --ia32 --publish never
+          - os: macos-latest
+            cmd: npx electron-builder --mac dmg --x64 --arm64 --publish never
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: node prepare.js
+      - run: ${{ matrix.cmd }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Ajouter les fichiers à la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          shopt -s nullglob
+          files=(dist/*.exe dist/*.dmg)
+          ls -la "${files[@]}"
+          gh release upload "$TAG" "${files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
