@@ -42,7 +42,7 @@ async function fonts() {
   html = html.replace(/<link rel="preconnect"[^>]*>\s*/g, "")
              .replace(/<link href="https:\/\/fonts\.googleapis\.com[^>]*>/, ok ? '<link rel="stylesheet" href="fonts/fonts.css">' : "");
   // politique de sécurité : rien n'est chargé depuis Internet
-  html = html.replace("<head>", '<head>\n<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'; font-src \'self\'; img-src \'self\' data:">');
+  html = html.replace("<head>", '<head>\n<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'; font-src \'self\' data:; img-src \'self\' data:">');
   fs.writeFileSync(path.join(OUT, "index.html"), html);
   const icon = path.join(__dirname, "build", "icon.png");
   if (fs.existsSync(icon)) fs.copyFileSync(icon, path.join(OUT, "icon.png"));

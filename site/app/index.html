@@ -2052,11 +2052,133 @@ Fin`]
 })();
 </script>
 <script>
+// ===== Télécharger une fenêtre en image (PNG aux dimensions du contenu) =====
+// Le contenu est recopié dans une image SVG (foreignObject) avec la feuille de style de la page,
+// puis dessiné sur un canevas en double résolution. Les polices sont intégrées quand c'est possible.
+(function(){
+  "use strict";
+  const $=id=>document.getElementById(id), DK=window.desktop||null;
+  const APPCSS=(document.querySelector("head style")||{}).textContent||"";
+  const VARS=[...new Set(APPCSS.match(/--[\w-]+(?=\s*:)/g)||[])];
+  const SYSF={"--display":'system-ui,"Segoe UI",sans-serif',"--body":'system-ui,-apple-system,"Segoe UI",sans-serif',"--mono":'ui-monospace,"Cascadia Mono",Consolas,monospace'};
+  const XPCSS=
+    ".xp{position:fixed;left:-100000px;top:0;width:max-content;background:var(--surface);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;margin:0}"+
+    ".xp .xp-cap{display:flex;align-items:baseline;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);font:600 12px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}"+
+    ".xp .xp-cap b{font:700 16px/1.2 var(--display);letter-spacing:0;text-transform:none;color:var(--ink)}"+
+    ".xp .flow,.xp .console,.xp .mem{height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important;flex:none!important}"+
+    ".xp .flow{padding:18px 20px 24px}.xp .console .line{white-space:pre}"+
+    ".xp table{width:auto;min-width:100%}.xp th{position:static}"+
+    ".xp .xp-code{display:flex;font-family:var(--mono);font-size:15px;line-height:24px}"+
+    ".xp .xp-gut{padding:12px 10px 12px 14px;text-align:right;color:var(--muted);background:var(--bg);border-right:1px solid var(--line);white-space:pre}"+
+    ".xp .xp-src{margin:0;padding:12px 20px 12px 14px;font:inherit;white-space:pre;tab-size:3;color:var(--ink)}"+
+    ".xp .xp-probe{position:absolute;left:0;top:0;width:100px;height:1px;visibility:hidden}";
+  const st=document.createElement("style"); st.textContent=XPCSS; document.head.appendChild(st);
+
+  // Polices intégrées en data: (bureau : fournies par l'application ; web : Google Fonts). Sinon polices du système.
+  let fontP=null;
+  const asData=blob=>new Promise((ok,ko)=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=ko; r.readAsDataURL(blob); });
+  async function webFonts(){
+    const link=document.querySelector('link[href*="fonts.googleapis.com"]'); if(!link) return "";
+    const css=await (await fetch(link.href)).text();
+    let out="";
+    for(const b of css.split(/(?=\/\* )/).filter(b=>/^\/\* latin(-ext)? \*\//.test(b))){
+      const m=b.match(/url\((https:[^)]+)\)/); if(!m) continue;
+      out+=b.replace(m[1],await asData(await (await fetch(m[1])).blob())); }
+    return out;
+  }
+  function fonts(){
+    if(!fontP) fontP=Promise.resolve(DK&&DK.fontCss?DK.fontCss():webFonts()).then(c=>c||"",()=>{ fontP=null; return ""; });
+    return fontP;
+  }
+
+  const algoName=()=>{ const m=/^\s*algorithme\s+([^\s\/]+)/im.exec($("code").value); return m?m[1]:"algorithme"; };
+  const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  function what(pid){
+    if(pid==="pAlgo") return $("flow").hidden?{label:"Algorithme",slug:"algorithme"}:{label:"Organigramme",slug:"organigramme"};
+    if(pid==="pEcran") return {label:"Écran",slug:"resultat"};
+    return $("mem-trace").hidden?{label:"Variables",slug:"variables"}:{label:"Table de trace",slug:"table-de-trace"};
+  }
+  function content(pid){
+    const d=document.createElement("div");
+    if(pid==="pAlgo"&&!$("flow").hidden){
+      d.className="flow"; d.innerHTML=$("flow").innerHTML;
+      d.querySelectorAll(".travel,.add,#add-var,#new-flow,#go-text").forEach(e=>e.remove());
+      d.querySelectorAll(".cur,.bad").forEach(e=>e.classList.remove("cur","bad"));
+    } else if(pid==="pAlgo"){
+      const lines=$("code").value.replace(/\s+$/,"").split("\n");
+      const hlL=$("hl").innerHTML.split("\n").slice(0,lines.length);
+      d.innerHTML='<div class="xp-code"><div class="xp-gut">'+lines.map((_,i)=>i+1).join("\n")+'</div><pre class="xp-src">'+hlL.join("\n")+"</pre></div>";
+    } else if(pid==="pEcran"){
+      d.className="console"; d.innerHTML=$("console").innerHTML;
+      d.querySelectorAll("form").forEach(e=>e.remove());
+    } else {
+      d.className="mem"; d.innerHTML=$($("mem-trace").hidden?"mem-vars":"mem-trace").innerHTML;
+      d.querySelectorAll(".chg").forEach(e=>e.classList.remove("chg"));
+    }
+    return d;
+  }
+  function inlineVars(sys){
+    const cs=getComputedStyle(document.documentElement);
+    return VARS.map(v=>{ const x=sys&&SYSF[v]?SYSF[v]:cs.getPropertyValue(v).trim(); return x?v+":"+x+";":""; }).join("");
+  }
+  const frame=()=>new Promise(r=>requestAnimationFrame(()=>r()));
+
+  async function render(pid){
+    const fcss=await fonts(), sys=!fcss, w8=what(pid);
+    const root=document.createElement("div");
+    root.className="xp"; root.setAttribute("style",inlineVars(sys));
+    root.innerHTML='<div class="xp-cap">'+esc(w8.label)+" <b>"+esc(algoName())+"</b></div>";
+    root.appendChild(content(pid));
+    const probe=document.createElement("div"); probe.className="xp-probe"; root.appendChild(probe);
+    document.body.appendChild(root);
+    let w,h;
+    try{ await frame();
+      const k=probe.getBoundingClientRect().width/100||1, R=root.getBoundingClientRect();
+      w=Math.ceil(R.width/k); h=Math.ceil(R.height/k);
+    } finally { root.remove(); }
+    probe.remove();
+    root.style.position="static"; root.style.width=w+"px"; root.style.height=h+"px";
+    const css=document.createElement("style"); css.textContent=APPCSS+XPCSS+fcss; root.prepend(css);
+    const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'"><foreignObject x="0" y="0" width="'+w+'" height="'+h+'">'+
+      new XMLSerializer().serializeToString(root)+"</foreignObject></svg>";
+    const img=new Image(); img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+    await img.decode(); await frame();
+    const s=Math.max(.5,Math.min(2,16000/w,16000/h,Math.sqrt(60e6/(w*h))));
+    const cv=document.createElement("canvas"); cv.width=Math.round(w*s); cv.height=Math.round(h*s);
+    const cx=cv.getContext("2d"); cx.scale(s,s); cx.drawImage(img,0,0,w,h);
+    const blob=await new Promise((ok,ko)=>cv.toBlob(b=>b?ok(b):ko(new Error("toBlob")),"image/png"));
+    return {blob,name:(algoName()+"-"+w8.slug).replace(/[\\\/:*?"<>|]/g,"_")+".png"};
+  }
+
+  async function exportPanel(pid,btn){
+    btn.disabled=true;
+    try{
+      const {blob,name}=await render(pid);
+      if(DK&&DK.saveImage){ const data=(await asData(blob)).split(",")[1]; await DK.saveImage({name,data}); }
+      else { const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=name;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000); }
+    }catch(e){ alert("Impossible de créer l'image ("+(e&&e.message||e)+")."); }
+    finally{ btn.disabled=false; }
+  }
+
+  const ICO='<svg viewBox="0 0 14 14"><path d="M7 1.8v7M4.2 6.2 7 9l2.8-2.8M2.2 10.2v2h9.6v-2"/></svg>';
+  document.querySelectorAll(".win").forEach(wn=>{
+    const p=wn.closest(".panel"), b=document.createElement("button");
+    b.type="button"; b.className="wbtn"; b.dataset.act="img"; b.id="img-"+p.id; b.innerHTML=ICO;
+    const tip=()=>{ b.title="Télécharger « "+what(p.id).label+" » en image (PNG)"; b.setAttribute("aria-label",b.title); };
+    tip(); b.addEventListener("pointerenter",tip); b.addEventListener("focus",tip);
+    b.addEventListener("click",e=>{ e.stopPropagation(); exportPanel(p.id,b); });
+    wn.prepend(b);
+  });
+  fonts(); // préparation en arrière-plan
+})();
+</script>
+<script>
 // ===== Statistiques anonymes d'utilisation (PostHog) =====
 // Jamais le code écrit ni de donnée personnelle : seulement « ouverte », minutes actives, fonctions utilisées, système et pays.
 // Désactivable : bandeau au premier lancement, menu Aide › Statistiques anonymes (bureau), page confidentialite.html (en ligne).
 (function(){
-  const PH_KEY="phc_Bomhs7zGdFXTDrtp4ypcLB96SaGMdVrYmespCWH7hDCt", PH_HOST="https://eu.i.posthog.com", VERSION="1.0.2";
+  const PH_KEY="phc_Bomhs7zGdFXTDrtp4ypcLB96SaGMdVrYmespCWH7hDCt", PH_HOST="https://eu.i.posthog.com", VERSION="1.0.3";
   if(!/^phc_[A-Za-z0-9]{20,}$/.test(PH_KEY) || navigator.webdriver) return;     // pas de clé, ou robot : rien n'est envoyé
   const DK=window.desktop||null;
   const get=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } }, put=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
@@ -2093,7 +2215,8 @@ Fin`]
 
   // Fonctions utilisées (au plus une fois toutes les 15 s chacune)
   const seen={}, feat=(n,p)=>{ const t=Date.now(); if(seen[n]&&t-seen[n]<15000) return; seen[n]=t; send("fonction_utilisee",Object.assign({fonction:n},p||{})); };
-  const MAP={run:"executer",step:"pas_a_pas",auto:"lecture_auto","view-flow":"organigramme","tab-trace":"table_de_trace",open:"fichier_ouvrir",save:"fichier_enregistrer","new-flow":"organigramme_nouveau"};
+  const MAP={run:"executer",step:"pas_a_pas",auto:"lecture_auto","view-flow":"organigramme","tab-trace":"table_de_trace",open:"fichier_ouvrir",save:"fichier_enregistrer","new-flow":"organigramme_nouveau",
+    "img-pAlgo":"image_algorithme","img-pEcran":"image_ecran","img-pMem":"image_memoire"};
   document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("button[id]"); if(b&&MAP[b.id]) feat(MAP[b.id]); },true);
   document.addEventListener("change",e=>{ const ex=e.target; if(ex&&ex.id==="examples"){ const o=ex.options[ex.selectedIndex]; if(o&&o.value!=="") feat("exemple",{exemple:o.textContent}); } },true);
   const eb=document.getElementById("errbox");

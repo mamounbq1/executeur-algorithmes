@@ -135,6 +135,27 @@ ipcMain.handle("save-file", async (_e, { path: p, name, text }) => {
   return p;
 });
 
+// ----- Images : polices intégrées (data:) et enregistrement du PNG -----
+ipcMain.handle("font-css", () => {
+  try {
+    const dir = path.join(__dirname, "app", "fonts");
+    const css = fs.readFileSync(path.join(dir, "fonts.css"), "utf8");
+    return css.replace(/url\(([^)]+\.woff2)\)/g, (_m, f) =>
+      "url(data:font/woff2;base64," + fs.readFileSync(path.join(dir, path.basename(f))).toString("base64") + ")");
+  } catch (e) { return ""; }
+});
+
+ipcMain.handle("save-image", async (_e, { name, data }) => {
+  const r = await dialog.showSaveDialog(win, {
+    title: "Enregistrer l'image",
+    defaultPath: path.join(app.getPath("pictures"), String(name || "image.png").replace(/[\\/:*?"<>|]/g, "_")),
+    filters: [{ name: "Image PNG", extensions: ["png"] }]
+  });
+  if (r.canceled || !r.filePath) return null;
+  fs.writeFileSync(r.filePath, Buffer.from(String(data), "base64"));
+  return r.filePath;
+});
+
 // Statistiques anonymes : la page ne peut rien envoyer sur Internet (CSP) ; ce relais n'envoie qu'à PostHog
 ipcMain.on("track", (_e, body) => {
   if (!body || typeof body !== "object" || !/^phc_[A-Za-z0-9]{20,}$/.test(String(body.api_key)) || typeof body.event !== "string") return;
