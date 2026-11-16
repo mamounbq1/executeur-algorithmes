@@ -135,6 +135,36 @@ footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);f
   .hero{padding-top:16px}
 }
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .btn{transition:none} }
+
+/* Guide d'installation (s'ouvre au téléchargement) */
+.guide[hidden]{display:none}
+.guide{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;background:#06141580;backdrop-filter:blur(3px)}
+.guide-box{position:relative;width:min(760px,100%);background:var(--surface);color:var(--ink);border-radius:18px;padding:26px 26px 22px;box-shadow:0 30px 80px -20px #000a;margin:auto 0}
+.guide-box h2{font-family:var(--display);font-size:26px;line-height:1.15;margin:0 34px 6px 0}
+.guide-box .lead{margin:0 0 18px;color:var(--muted);font-size:15.5px;max-width:none}
+.guide-x{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:20px;line-height:1;cursor:pointer}
+.gstep{display:grid;grid-template-columns:36px minmax(0,1fr);gap:14px;padding:16px 0;border-top:1px solid var(--line)}
+.gstep .n{width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-family:var(--display)}
+.gstep h3{margin:4px 0 4px;font-size:17px}
+.gstep p{margin:0 0 10px;font-size:15px}
+.mock{border-radius:10px;font:13px/1.45 "Segoe UI",system-ui,sans-serif;max-width:440px}
+.mock.edge{background:#fff;color:#1b1b1b;border:1px solid #d6d6d6;padding:12px 14px;box-shadow:0 6px 20px -8px #0004}
+.mock.edge .row{display:flex;gap:10px;align-items:flex-start}
+.mock.edge .ic{color:#c4720a;font-size:16px;line-height:1}
+.mock .acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.mock .b{display:inline-block;border:1px solid #c8c8c8;border-radius:5px;padding:4px 12px;background:#f6f6f6;color:#1b1b1b}
+.mock .hi{outline:3px solid #f2a541;outline-offset:2px;font-weight:600}
+.mock.ss{background:#0063b1;color:#fff;padding:16px 18px;border-radius:4px}
+.mock.ss .t{font-size:19px;font-weight:300;margin-bottom:8px}
+.mock.ss .lnk{text-decoration:underline}
+.mock.ss .acts{justify-content:flex-end;margin-top:14px;gap:10px}
+.mock.ss .b{background:#fff;color:#000;border:0;border-radius:0;padding:6px 14px;font-weight:600}
+.mock.ss .b.dim{background:transparent;color:#fff;border:1px solid #fff;font-weight:400}
+.arrow{color:var(--orange);font-weight:700}
+.guide-foot{border-top:1px solid var(--line);padding-top:14px;font-size:14.5px;color:var(--muted)}
+.guide-foot .btn{font-size:15px;padding:9px 16px;margin-top:10px}
+.why{font-size:14px;color:var(--muted);margin:8px 0 0}
+@media (max-width:560px){ .guide-box{padding:20px 16px} .gstep{grid-template-columns:30px minmax(0,1fr);gap:10px} .gstep .n{width:30px;height:30px} }
 </style>
 <!-- Statistiques de visite (Vercel Web Analytics : sans cookie, aucune donnée personnelle) -->
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
@@ -279,6 +309,7 @@ footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);f
         <div>
           <h3><svg class="os" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5l7.5-1v7H3zM11.5 4.3L21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg> Windows</h3>
           <ol class="steps v">
+            <li><b>Garder le fichier</b><span>Si le navigateur dit « n'est pas fréquemment téléchargé » : Edge › <b>⋯</b> › <b>Conserver</b> › <b>Conserver quand même</b> ; Chrome › <b>Conserver</b>.</span></li>
             <li><b>Lancer l'installateur</b><span>Double-cliquez sur le fichier <code>.exe</code> téléchargé, choisissez le dossier puis cliquez sur « Installer ».</span></li>
             <li><b>C'est prêt</b><span>Ouvrez l'application depuis le Bureau ou le menu Démarrer. Les fichiers .algo s'ouvrent d'un double-clic.</span></li>
           </ol>
@@ -331,6 +362,38 @@ footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);f
     </div>
   </main>
 
+<div class="guide" id="guide" hidden role="dialog" aria-modal="true" aria-labelledby="guide-t">
+  <div class="guide-box">
+    <button class="guide-x" type="button" data-close aria-label="Fermer">×</button>
+    <h2 id="guide-t">Le téléchargement a commencé 🎉</h2>
+    <p class="lead" id="guide-lead">Windows va vous demander deux fois de confirmer : c'est normal pour une nouvelle application gratuite qui n'a pas encore de « signature » payante. Elle ne contient aucun virus.</p>
+    <div id="guide-win">
+      <div class="gstep"><span class="n">1</span><div>
+        <h3>Le navigateur dit « n'est pas fréquemment téléchargé »</h3>
+        <p>Dans <b>Edge</b> : passez la souris sur le fichier, cliquez sur <b>⋯</b> puis <b>Conserver</b>, puis <b>Afficher plus</b> › <b>Conserver quand même</b>. Dans <b>Chrome</b> : cliquez sur <b>Conserver</b>.</p>
+        <div class="mock edge" aria-hidden="true"><div class="row"><span class="ic">⚠</span><div>Executeur-algorithmes-Windows-x64.exe n'est pas fréquemment téléchargé. Assurez-vous que vous faites confiance à ce fichier avant de l'ouvrir.</div></div>
+          <div class="acts"><span class="b hi">Conserver</span><span class="b">Supprimer</span></div></div>
+      </div></div>
+      <div class="gstep"><span class="n">2</span><div>
+        <h3>Ouvrez le fichier : « Windows a protégé votre ordinateur »</h3>
+        <p>Cliquez sur <b>Informations complémentaires</b> <span class="arrow">→</span> puis sur <b>Exécuter quand même</b>.</p>
+        <div class="mock ss" aria-hidden="true"><div class="t">Windows a protégé votre ordinateur</div>Microsoft Defender SmartScreen a empêché le démarrage d'une application non reconnue…<br><br><span class="lnk hi">Informations complémentaires</span>
+          <div class="acts"><span class="b hi">Exécuter quand même</span><span class="b dim">Ne pas exécuter</span></div></div>
+        <p class="why">« Éditeur inconnu » veut seulement dire que l'application n'a pas de certificat payant. Son code est public sur <a href="https://github.com/mamounbq1/executeur-algorithmes" target="_blank" rel="noopener">GitHub</a>.</p>
+      </div></div>
+      <div class="gstep"><span class="n">3</span><div>
+        <h3>Installez</h3>
+        <p>Choisissez le dossier et cliquez sur <b>Installer</b>. L'application s'ouvre ensuite depuis le Bureau ou le menu Démarrer.</p>
+      </div></div>
+    </div>
+    <div id="guide-mac" hidden>
+      <div class="gstep"><span class="n">1</span><div><h3>Ouvrez le .dmg</h3><p>Double-cliquez sur le fichier téléchargé et glissez l'application dans <b>Applications</b>.</p></div></div>
+      <div class="gstep"><span class="n">2</span><div><h3>macOS ne peut pas vérifier l'application</h3><p>Ouvrez <b>Réglages Système</b> › <b>Confidentialité et sécurité</b>, descendez et cliquez sur <b>Ouvrir quand même</b>, puis confirmez. À faire une seule fois.</p></div></div>
+    </div>
+    <div class="guide-foot">Bloqué malgré tout ? La <b>version en ligne</b> fonctionne sans rien installer.<br>
+      <a class="btn ghost" href="app/">Utiliser la version en ligne</a> <button class="btn primary" type="button" data-close>J'ai compris</button></div>
+  </div>
+</div>
   <footer>Exécuteur d'algorithmes · version 1.0.2 · <a href="https://github.com/mamounbq1/executeur-algorithmes">code source</a> · <a href="#soutenir">☕ offrir un café</a> · <a href="confidentialite.html">confidentialité</a></footer>
 </div>
 <script>
@@ -353,6 +416,25 @@ footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);f
   card.classList.add("reco"); card.parentNode.classList.add("has-reco"); card.insertAdjacentHTML("afterbegin",'<span class="badge">Pour cet ordinateur</span>');
   const dl=document.getElementById("dl"); dl.href=card.querySelector("a").href;
   document.getElementById("dl-label").textContent="Télécharger pour "+NAMES[key];
+})();
+</script>
+<script>
+// Guide d'installation : s'ouvre quand on clique sur un lien de téléchargement (le téléchargement continue normalement)
+(function(){
+  const g=document.getElementById("guide"); if(!g) return;
+  const LW="Windows va vous demander deux fois de confirmer : c'est normal pour une nouvelle application gratuite qui n'a pas encore de « signature » payante. Elle ne contient aucun virus.", LM="macOS peut demander une confirmation la première fois : c'est normal pour une application gratuite qui n'a pas de certificat Apple payant.";
+  let last=null;
+  function open(mac){
+    document.getElementById("guide-win").hidden=mac; document.getElementById("guide-mac").hidden=!mac;
+    document.getElementById("guide-lead").textContent=mac?LM:LW;
+    last=document.activeElement; g.hidden=false; document.body.style.overflow="hidden"; g.querySelector(".guide-x").focus();
+    if(window.posthog&&window.posthog.capture) window.posthog.capture("guide_installation_ouvert",{systeme:mac?"mac":"windows"});
+  }
+  function close(){ g.hidden=true; document.body.style.overflow=""; if(last&&last.focus) last.focus(); }
+  document.addEventListener("click",e=>{ const a=e.target.closest&&e.target.closest("a[href]"); if(!a) return;
+    const h=a.getAttribute("href")||""; if(/releases\/.*\/download\/.*\.(exe|dmg)$/i.test(h)) setTimeout(()=>open(/\.dmg$/i.test(h)),150); });
+  g.addEventListener("click",e=>{ if(e.target===g||(e.target.closest&&e.target.closest("[data-close]"))) close(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!g.hidden) close(); });
 })();
 </script>
 </body>
