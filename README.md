@@ -16,3 +16,18 @@ Application pour écrire des algorithmes en français, les exécuter pas à pas,
 ## Fonctionnalités
 
 Pas à pas et lecture automatique, organigramme animé, variables et table de trace, tableaux et matrices, Si / Selon / Pour / Tant que / Répéter, fonctions et procédures (paramètres `Var`, récursivité), messages d'erreur expliqués, fichiers `.algo`.
+
+
+## Licence
+
+Ce projet est publié sous licence MIT : voir le fichier [LICENSE](LICENSE).
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+Committers and reviewers: [mamounbq1](https://github.com/mamounbq1)
+
+Approvers: [mamounbq1](https://github.com/mamounbq1)
+
+Privacy policy: [Confidentialité](https://executeur-algorithmes.vercel.app/confidentialite.html). L'application mesure quelques statistiques anonymes, que l'on peut refuser au premier lancement ou dans le menu Aide › Statistiques anonymes.
